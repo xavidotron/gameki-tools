@@ -1,0 +1,131 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+import subprocess, sys, os, glob
+import yaml
+import argparse, getpass
+
+import smtplib
+from email import encoders
+from email.mime.text import MIMEText
+from email.mime.nonmultipart import MIMENonMultipart
+from email.mime.multipart import MIMEMultipart
+
+from prod_lib import *
+
+### From bazjunk/email.py
+
+def format(email, attachments):
+    text = MIMEText(email['text'], 'plain', 'utf-8')
+    if attachments:
+        msg = MIMEMultipart()
+        msg.attach(text)
+        for attachment in attachments:
+            filename, data, contenttype = attachment
+            maintype, subtype = contenttype.split('/', 1)
+            att = MIMENonMultipart(maintype, subtype)
+            att.set_payload(data)
+            encoders.encode_base64(att)
+            att.add_header('Content-Disposition', 'attachment',
+                           filename=filename)
+            msg.attach(att)
+    else:
+        msg = text
+    msg['Subject'] = email['subject']
+    msg['From'] = email['from']
+    msg['To'] = email['to']
+    if 'cc' in email:
+        msg['CC'] = email['cc']
+    return msg.as_string()
+
+def send(email, attachments, s):
+    msg = format(email, attachments)
+    dests = [email['to']]
+    if 'cc' in email:
+        dests.append(email['cc'])
+    s.sendmail(email['from'], dests, msg)
+
+###
+
+templates = [os.path.basename(p)[:-len('.tex')]
+             for p in glob.glob('Gameki/Mail/*.tex')]
+
+parser = argparse.ArgumentParser()
+group = parser.add_mutually_exclusive_group(required=True)
+group.add_argument("template", nargs='?',
+                   help="template under Mail/ to use, one of: "
+                   + ', '.join(templates))
+group.add_argument("--list", help="list available templates",
+                   action="store_true")
+parser.add_argument("--send", help="send email instead of displaying",
+                    action="store_true")
+parser.add_argument("--dry-run", help="send email to sender instead",
+                    action="store_true")
+parser.add_argument("--macro",
+                    help="only run for specified macro instead of all")
+parser.add_argument("--run", help="use specified gamerun")
+args = parser.parse_args()
+
+if args.list:
+    for t in templates:
+        print t
+    sys.exit(0)
+
+if args.macro:
+    macros = [args.macro]
+else:
+    macros = [unicode(m.strip(), 'utf-8')
+              for m in
+              get_text('Gameki/LaTeX/charmacros.tex').strip().split('\n')]
+
+server = None
+if args.send or args.dry_run:
+    config = yaml.safe_load(open('Gameki/config.yaml'))
+    server_host = config['mail']['server']
+    username = config['mail']['username']
+    server = smtplib.SMTP(server_host, 587)
+    server.starttls()
+    server.login(username,
+                 getpass.getpass("Password for %s on %s: "
+                                 % (username, server_host)))
+
+for m in macros:
+    # The \ in a macro name is, in the default font encoding, treated as “
+    if m.startswith(u'“') or m.startswith('\\'):
+        jobname = m[1:]
+    else:
+        jobname = m
+    if args.run:
+        jobname = args.run + '-' + jobname
+    text = get_text('Gameki/Mail/' + args.template + '.tex', jobname)
+
+    if server:
+        lines = text.split('\n')
+        d = {}
+        attachments = []
+        while lines:
+            l = lines.pop(0)
+            if not l.strip():
+                break
+            assert ': ' in l, l
+            key, val = l.split(': ')
+            if key == 'Attach':
+                name, target = val.strip().split('=', 1)
+                attachments.append((name, get_pdf(target), 'application/pdf'))
+            else:
+                d[key.lower()] = val.strip()
+        d['text'] = '\n'.join(lines).strip()
+        if args.dry_run:
+            d['to'] = d['from']
+        send(d, attachments, server)
+        sys.stderr.write("Sent %s to %s...\n" % (m, d['to']))
+    else:
+        print text
+        print '==='
+        print
+
+if server:
+    server.quit()
+    sys.stderr.write("%d emails sent.\n" % len(macros))
+else:
+    sys.stderr.write("%d emails shown.\n" % len(macros))

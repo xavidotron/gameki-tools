@@ -1,0 +1,13 @@
+% This bit parses a jobname like listchar-cJamesBond and sets \classpart
+% to listchar and \whatpart to \cJamesBond{}.
+\def\parsejobname#1-#2\endparsejobname{%
+  \def\classpart{#1}%
+  \def\whatpart{\csname#2\endcsname{}}}
+\expandafter\parsejobname\jobname\endparsejobname
+
+\documentclass[\classpart]{wellwishes}
+\begin{document}
+
+\whatpart
+
+\end{document}

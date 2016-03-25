@@ -1,0 +1,40 @@
+\input{Gameki/LaTeX/parsejobname.tex}
+\documentclass[sheet]{wellwishes}
+\usepackage{\gamepath/Gameki/LaTeX/text}
+
+\begin{document}
+
+% Don't include the \ when \string-ing a macro.
+\def\mymacro{%
+  {\escapechar=-1\edef\helper{\expandafter\string\ME}\helper}}
+
+\MAP{Green}{
+  Attach: \MYname.pdf=listgreen-\mymacro
+}
+\MAP{Blue}{
+  Attach: \MYname.pdf=listblue-\mymacro
+}
+
+%\EVERY{PC}{
+\SURFACEMAP{PC}{
+  From: wishing-well@pianojuice.net\\
+  To: \MYemail\\
+  Subject: [Wishing Well] Character Packet and Rules\\
+  Attach: \MYname.pdf=listchar-\mymacro\\
+  \MYblues\\
+  \MYgreens\\
+  Attach: Rules.pdf=Handouts/rules-scenario.tex
+
+  Dear Wishing Well LARPers,
+
+  Here are your sheets for Wishing Well at Intercon P.
+  If you have any questions, feel free to ask.
+  We look forward to seeing you soon!
+
+  Best wishes,\\
+  \textasciitilde Sarah and Xavid
+}
+
+\parsedmacros
+
+\end{document}
