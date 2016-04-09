@@ -15,7 +15,7 @@ Examples:
 
 Options:
   -l: use lualatex instead of pdflatex
-  -t: use lualatex and cat the text output (from Gameki/LaTeX/text.sty)
+  -t: use lualatex and cat the text output (from Gameki/lib/text.sty)
   -j JOBNAME: pass JOBNAME as the jobname to the latex file
   -o OUTDIR: directory for output to go to
 EOF
@@ -80,7 +80,7 @@ if echo "$1" | egrep -q '^[^.]+-[^.]+$' ; then
     # Gameki/LaTeX/prod.tex.
     jobname="$1"
     shift
-    set "$dir/Gameki/LaTeX/prod.tex"
+    set "$dir/Gameki/lib/prod.tex"
 fi
 
 for f in "$@" ; do
@@ -104,7 +104,7 @@ for f in "$@" ; do
     # NOTE(xavid): setting outdir leads to an unnecessary extra pass when
     #              the .aux file didn't already exist. We could theoretically
     #              try to fix this.
-    latexmk -halt-on-error -interaction=nonstopmode "${flags[@]}" "$f" >&2
+    latexmk -halt-on-error -interaction=nonstopmode "${flags[@]}" "$f" >&2 </dev/null
 done
 
 if [ $# -ge 2 ] ; then

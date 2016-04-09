@@ -1,4 +1,4 @@
-\directlua{dofile('Gameki/LaTeX/textoutput.lua')}
+\directlua{require('textoutput')}
 \directlua{openout("\jobname.txt")}
 %\output{\directlua{process(tex.box[255].list)}%
 %  \shipout\box255}

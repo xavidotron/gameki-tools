@@ -1,7 +1,10 @@
 import subprocess, sys, os
 
+GAMEKI_DIR = os.path.dirname(os.path.dirname(__file__))
+
 def prod(target, extra_args=[]):
-    cmd = [os.path.dirname(__file__) + '/prod'] + extra_args + [target]
+    cmd = [GAMEKI_DIR + '/bin/prod'] + extra_args + [target]
+    print cmd
     process = subprocess.Popen(cmd,
                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = process.communicate()
