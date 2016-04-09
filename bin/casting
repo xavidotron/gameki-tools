@@ -1,0 +1,406 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+import sys, string
+import collections, re
+import csv, cgi
+
+supheadings = []
+headings = []
+coltypes = []
+#d = collections.OrderedDict()
+apps = []
+times = []
+special_col_index_map = {}
+ambig_indexes = set()
+
+# Magic
+SPECIAL_NAMES = ('Name', 'Email')
+TIME_NAME = "When are you able to play?"
+CHARS = []
+
+COMMENT_RE = re.compile(r'^\s*%')
+PC_RE = re.compile(r'\\NEW\{PC\}\{(\\[a-zA-Z]+)\}')
+NAME_RE = re.compile(r'\\s\\MYname\{(.+)\}')
+DESC_RE = re.compile(r'\\s\\MYdesc\{(.+)\}')
+with open('Lists/char-LIST.tex') as charf:
+    curr_macro = None
+    curr_desc = None
+    for l in charf:
+        if COMMENT_RE.search(l):
+            continue
+        m = PC_RE.search(l)
+        if m:
+            if curr_macro:
+                CHARS.append((curr_macro, curr_desc))
+            if m.group(1) == r'\cTest':
+                curr_macro = None
+            else:
+                curr_macro = m.group(1)
+            curr_desc = ''
+            continue
+        if curr_macro is None:
+            continue
+        
+        m = NAME_RE.search(l)
+        if m:
+            curr_desc += m.group(1)
+            continue
+        
+        m = DESC_RE.search(l)
+        if m:
+            curr_desc += ' (%s)' % m.group(1)
+            continue
+    
+    if curr_macro:
+        CHARS.append((curr_macro, curr_desc))
+
+RATINGS_RE = re.compile(r'^(.*) \[(.*)\]$')
+TIME_SPLIT_RE = re.compile(r', (?=\d)')
+TIME_SUB_RE = re.compile(r'(?:ur)?day, October \d+th$')
+
+time_index = None
+
+for l in csv.reader(file(sys.argv[1])):
+    if not headings:
+        for index in xrange(len(l)):
+            item = l[index]
+            m = RATINGS_RE.match(item)
+            if m:
+                headings.append(m.group(2))
+                supheadings.append(m.group(1))
+                coltypes.append('n')
+            else:
+                headings.append(item)
+                supheadings.append('')
+                if item == TIME_NAME:
+                    coltypes.append('t')
+                    time_index = index
+                elif item in SPECIAL_NAMES:
+                    coltypes.append('s')
+                    special_col_index_map[item] = index
+                else:
+                    ambig_indexes.add(index)
+                    coltypes.append('n')
+    else:
+        apps.append(l)
+        
+        if time_index is not None and l[time_index]:
+            tbits = TIME_SPLIT_RE.split(l[time_index])
+            for t in times:
+                if t not in tbits:
+                    break
+            else:
+                times = tbits
+                continue
+            for tbit in tbits:
+                if tbit not in times:
+                    times.append(tbit)
+        for i in list(ambig_indexes):
+            if len(l[i]) > 1:
+                coltypes[i] = 'l'
+                ambig_indexes.remove(i)
+if not times:
+    times = ['1']
+totals = [0] * len(times)
+
+print r'''<html>
+<head>
+<meta charset="utf-8">
+<style>
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+td, th {
+  border: thin solid black;
+  text-align: center;
+}
+.selected td, .selected th {
+  border-top-width: 3px;
+  border-bottom-width: 3px;
+}
+*[onclick] {
+  cursor: pointer;
+}
+#apps th, #namerow td, .timename, .email {
+  font-size: 8pt;
+}
+#apps th[rowspan] {
+  font-size: 12pt;
+}'''
+COL_HEIGHT = 150
+COL_WIDTH = 32
+print '''th.n {
+  height: %(col_height)spx;
+}
+th.n > div {
+  width: %(col_width)spx;
+}
+th.n > div > div {
+  width: %(col_height)spx;
+  transform: rotate(90deg);
+  margin-left: -%(centering_adj)spx;
+  padding: 0 5px;
+}
+.n {
+  width: %(col_width)spx;
+}'''  % dict(col_height=COL_HEIGHT, col_width=COL_WIDTH,
+            centering_adj=(COL_HEIGHT - COL_WIDTH) / 2.)
+print '''tr.selected {
+  background-color: LightCyan;
+}
+tr.assigned .s {
+  background-color: LightGreen;
+}
+tr.possible th {
+  background-color: LightBlue;
+}
+tr.impossible {
+  background-color: Grey;
+}
+td.filled {
+  background-color: LightGreen;
+}
+td.invalid {
+  background-color: LightSalmon;
+}
+
+.n5 {
+  background-color: #99FF99;
+}
+.n4 {
+  background-color: #DDFFDD;
+}
+.n2 {
+  background-color: #FFDDDD;
+}
+.n1 {
+  background-color: #FF9999;
+}
+
+#apps {
+  height: 70%;
+  width: 75%;
+  overflow: auto;
+  position: relative;
+}
+#text {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 25%;
+  height: 70%;
+  overflow: auto;
+  padding: 5px;
+}
+dl {
+  margin: 0;
+}
+#casting {
+  padding: 5px;
+  height: 30%;
+  overflow: auto;
+}
+* {
+  box-sizing: border-box;
+}
+
+dt {
+  font-weight: bold;
+}
+</style>'''
+print r'''<script>
+function addClass(elem, cls) {
+  if (elem.className) {
+    elem.className += ' ' + cls;
+  } else {
+    elem.className = cls;
+  }
+}
+function removeClass(elem, cls) {
+  if (elem.className == cls) {
+    elem.className = '';
+  } else {
+    elem.className
+        = elem.className.replace(new RegExp(" " + cls + "\\b", "g"), "")
+          .replace(new RegExp("\\b" + cls + " ", "g"), "");
+  }
+}
+function hasClass(elem, cls) {
+  return elem.className.match(new RegExp("\\b" + cls + "\\b"));
+}
+
+var lastRow;
+function rowClick(row, index) {
+  document.getElementById('text').innerHTML = texts[index];
+  if (lastRow) {
+    removeClass(lastRow, "selected");
+  }
+  addClass(row, "selected");
+  lastRow = row;
+
+  var allTimes = document.getElementById("casting").getElementsByTagName("tr");
+  // Skip first two rows of headers.
+  for (var i = 2; i < allTimes.length; ++i) {
+    allTimes[i].className = 'impossible';
+  }
+  var avail = row.getElementsByClassName("avail")[0].innerHTML;
+  for (var i = 0; i < avail.length; ++i) {
+    document.getElementById('time' + avail[i]).className = 'possible';
+  }
+}
+
+var assignments = {};
+var assigned_rows = {};
+function assign(cell) {
+  if (!lastRow) {
+    return;
+  }
+
+  if (cell.innerHTML) {
+    removeClass(assigned_rows[cell.innerHTML], "assigned");
+    delete assigned_rows[cell.innerHTML];
+    delete assignments[cell.innerHTML];
+  }
+
+  if (!hasClass(lastRow, "assigned")) {
+    addClass(lastRow, "assigned");
+  }
+  var name = lastRow.getElementsByClassName('s')[0].textContent;
+  var email = lastRow.getElementsByClassName('s')[1].textContent;
+  if (assignments[name]) {
+    assignments[name].innerHTML = "";
+    assignments[name].className = "";
+  }
+  assignments[name] = cell;
+  assigned_rows[name] = lastRow;
+  cell.innerHTML = name;
+  if (cell.parentElement.className == "impossible") {
+    cell.className = "invalid";
+  } else {
+    cell.className = "filled";
+  }
+  cell.dataset.email = email;
+}
+
+function getRun(run) {
+  var data = '%% Name this file Lists/run' + run + '-LIST.tex or similar, and\n'
+           + '%% set \\gamerun to ' + run + ' in your .cls file.\n\n';
+  var row = document.getElementById('time' + run);
+  var cell = row.firstElementChild;  // Slot letter
+  cell = cell.nextElementSibling;  // Slot description
+  cell = cell.nextElementSibling;  // First character
+  var macros = document.getElementById('macros');
+  var macro = macros.firstElementChild;
+  while (cell.className != "download") {
+    if (cell.className == "filled" || cell.className == "invalid") {
+      data += '\\updatemacro{' + macro.innerHTML + '}{\n  \\rs\\MYplayer{' + cell.innerHTML
+            + '}\n  \\rs\\MYemail{' + cell.dataset.email + '}\n}';
+      if (cell.className == "invalid") {
+        data += '  % Time conflict!';
+      }
+      data += '\n';
+    } else {
+      data += '%% No one cast for ' + macro.innerHTML + '!\n';
+    }
+    cell = cell.nextElementSibling;
+    macro = macro.nextElementSibling;
+  }
+  console.log(data);
+  var link = document.createElement("a");
+  link.download = 'run' + run + '-list.tex';
+  link.href = 'data:,' + encodeURIComponent(data);
+  link.click();
+  document.getElementById('text').innerHTML = '<pre>' + data + '</pre>';
+}
+
+var texts = [];
+</script>
+</head>
+<body>
+<div id="apps">
+<table>
+<tr>'''
+
+for sn in SPECIAL_NAMES:
+  print '<th rowspan="2">%s</th>' % sn
+x = 0
+while x < len(supheadings):
+    val = supheadings[x]
+    span = 0
+    while x < len(supheadings) and supheadings[x] == val:
+        if coltypes[x] in ('n', 't'):
+            span += 1
+        x += 1
+    if span == 0:
+        continue
+    if span > 1:
+        attrbit = ' colspan="%s"' % (span)
+    else:
+        attrbit = ''
+    print '<th%s>%s</th>' % (attrbit, cgi.escape(val))
+
+print '</tr><tr>'
+
+for i in xrange(len(headings)):
+    item = headings[i]
+    if coltypes[i] in ('n',):
+        print '<th class="%s"><div><div>%s</div></div></th>' % (coltypes[i], cgi.escape(item))
+    elif coltypes[i] == 't':
+        print '<th>Avail</th>'
+
+print '</tr>'
+
+for index in xrange(len(apps)):
+    a = apps[index]
+    htmlbit = '<dl>'
+    print '<tr onclick="rowClick(this, %s)">' % index
+    for sn in SPECIAL_NAMES:
+        print '<td class="s %s">%s</td>' % (
+            sn.lower(), a[special_col_index_map[sn]].replace('@', '<wbr>@'))
+    for i in xrange(len(a)):
+        item = a[i]
+        if coltypes[i] in ('n',):
+            print '<td class="%s n%s">%s</td>' % (coltypes[i], item,
+                                                 cgi.escape(item))
+        elif coltypes[i] == 't':
+            tbits = TIME_SPLIT_RE.split(item)
+            for t in tbits:
+                if t:
+                    totals[times.index(t)] += 1
+            print '<td class="avail">%s</td>' % ''.join(string.uppercase[ti] for ti in xrange(len(times)) if times[ti] in tbits)
+        elif coltypes[i] != 's' and item:
+            htmlbit += '<dt>%s</dt><dd>%s</dd>' % (
+                cgi.escape(headings[i], True), cgi.escape(item, True))
+    htmlbit += '</dl>'
+    print '</tr><script>'
+    print 'texts[%s] = "%s";' % (index, htmlbit.replace('\n', '<br>'))
+    print '</script>'
+
+print '''</table>
+</div>'''
+
+print '<div id="text">Select an app to see free-answer questions here.</div>'
+print '<div id="casting"><table>'
+print '<tr id="namerow"><th colspan="2" rowspan="2">Time Slot</th>'
+for cmacro,cname in CHARS:
+    print '<td>%s</td>' % cname
+print '<th rowspan="2">Get</th>'
+print '</tr>'
+print '<tr id="macros">'
+for cmacro,cname in CHARS:
+    print '<td>%s</td>' % cmacro
+print '</tr>'
+for i in xrange(len(times)):
+    print '<tr id="time%s">' % (string.uppercase[i])
+    print '<th>%s: %s</th>' % (string.uppercase[i], totals[i])
+    print '<th class="timename">%s</th>' % TIME_SUB_RE.sub('', times[i])
+    for cmacro,cname in CHARS:
+        print '<td onclick="assign(this)"></td>'
+    print '<td class="download"><a href="#" onclick="getRun(\'%s\'); return false">Run %s</a></td>' % (
+        string.uppercase[i], string.uppercase[i])
+    print '</tr>'
+print '</table></div>'
+print '''</body>
+</html>'''
