@@ -16,7 +16,7 @@ ambig_indexes = set()
 
 # Magic
 SPECIAL_NAMES = ('Name', 'Email')
-TIME_NAME = "When are you able to play?"
+TIME_HEADING_RE = re.compile(r'When|Time\b')
 CHARS = []
 
 COMMENT_RE = re.compile(r'^\s*%')
@@ -57,9 +57,13 @@ with open('Lists/char-LIST.tex') as charf:
 
 RATINGS_RE = re.compile(r'^(.*) \[(.*)\]$')
 TIME_SPLIT_RE = re.compile(r', (?=\d)')
-TIME_SUB_RE = re.compile(r'(?:ur)?day, October \d+th$')
+TIME_SUB_RE = re.compile(r'(?:ur)?day, \w+ \d+th$')
 
 time_index = None
+
+if len(sys.argv) < 2:
+    print >>sys.stderr, 'Usage: Gameki/bin/casting responses.csv > out.html'
+    sys.exit(1)
 
 for l in csv.reader(file(sys.argv[1])):
     if not headings:
@@ -73,7 +77,9 @@ for l in csv.reader(file(sys.argv[1])):
             else:
                 headings.append(item)
                 supheadings.append('')
-                if item == TIME_NAME:
+                if TIME_HEADING_RE.search(item):
+                    print >>sys.stderr, (
+                        "Interpreting '%s' as availability." % item)
                     coltypes.append('t')
                     time_index = index
                 elif item in SPECIAL_NAMES:
