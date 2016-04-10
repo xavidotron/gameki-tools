@@ -34,7 +34,7 @@ else
   charmap[0x7C] = "--"
 end
 
-local accents = require("Gameki/LaTeX/accents")
+local accents = require("Gameki/lib/accents")
 
 local spaces_pending = 0
 local eat_spaces = false
@@ -88,7 +88,8 @@ function gothru(h,prof)
         texio.write(' w=' .. t.spec.width .. ' stretch=' .. t.spec.stretch)
 	if eat_spaces then texio.write(' eat_spaces') end
       end
-      if t.subtype == 0 and not eat_spaces then
+      if (t.subtype == 0 and (t.spec.width > 0 or t.spec.stretch > 0)
+          and not eat_spaces) then
         spaces_pending = spaces_pending + 1
       end
     end
