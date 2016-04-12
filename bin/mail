@@ -57,6 +57,8 @@ group.add_argument("template", nargs='?',
                    + ', '.join(templates))
 group.add_argument("--list", help="list available templates",
                    action="store_true")
+group.add_argument("--emails", help="list email addresses",
+                   action="store_true")
 parser.add_argument("--send", help="send email instead of displaying",
                     action="store_true")
 parser.add_argument("--dry-run", help="send email to sender instead",
@@ -69,6 +71,10 @@ args = parser.parse_args()
 if args.list:
     for t in templates:
         print t
+    sys.exit(0)
+if args.emails:
+    print ', '.join(
+        get_text(GAMEKI_DIR + '/lib/emails.tex', args.run).strip().split('\n'))
     sys.exit(0)
 
 if args.macro:
@@ -109,7 +115,7 @@ for m in macros:
             if not l.strip():
                 break
             assert ': ' in l, l
-            key, val = l.split(': ')
+            key, val = l.split(': ', 1)
             if key == 'Attach':
                 name, target = val.strip().split('=', 1)
                 attachments.append((name, get_pdf(target), 'application/pdf'))
