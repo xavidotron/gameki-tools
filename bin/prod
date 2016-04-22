@@ -72,8 +72,9 @@ if [ $# -le 0 ] ; then
     exit 1
 fi
 
-export TEXINPUTS="$dir/LaTeX/:"
-export "$(basename "$dir")"="$dir"
+export TEXINPUTS="$dir/LaTeX/:$dir/Gameki/lib/:"
+export gameclassname="$(basename "$dir"/LaTeX/*.cls | cut -d . -f 1)"
+export "${gameclassname}"="$dir"
 
 if echo "$1" | egrep -q '^[^.]+-[^.]+$' ; then
     # If the arg has a dash and no dot, then it's a jobname to pass to

@@ -1,15 +1,8 @@
-% This bit parses a jobname like listchar-cJamesBond and sets \classpart
-% to listchar and \whatpart to \cJamesBond{}.
-\def\parsejobname#1-#2\endparsejobname{%
-  \def\classpart{#1}%
-  \def\whatpart{\csname#2\endcsname{}}}
-\expandafter\parsejobname\jobname\endparsejobname
-
-\documentclass[\classpart]{wellwishes}
+\documentclass{gameki}
 \usepackage[paperheight=8.5in,paperwidth=5.5in,hmargin=.5in,vmargin=1in]{geometry}
 \fancyhfoffset{0pt}
 \begin{document}
 
-\whatpart
+\parsedmacros
 
 \end{document}
