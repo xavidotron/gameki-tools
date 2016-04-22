@@ -1,36 +1,16 @@
-% Input this early so it can set \GAMERUN.
-\input{${wellwishes}/Gameki/lib/parsejobname.sty} %$
-\documentclass[sheet]{wellwishes}
-\usepackage{\gamepath/Gameki/lib/text}
+\documentclass{gameki}
+\usepackage{\gamekilib/text}
 
 \begin{document}
 
-\MAP{Green}{
-  \MYcastinghint
-}
-\MAP{Blue}{
-  \MYcastinghint
-}
-
 \SURFACEMAP{PC}{
-From: wishing-well@pianojuice.net\\
+From: \gameclassname-gms@mit.edu\\
 To: \MYemail\\
-Subject: [Wishing Well] Casting Hint
+Subject: [\gamename] Casting Hint
 
-Hello!
+Name: \MYname\ (\mfn{M}{F}{N})
 
-You've been cast off the waitlist for Wishing Well!
-
-In the interest of giving you some time to costume (if you want to, costumes are not required), we are sending out these casting hints ahead of your full characters. Full character sheets will be sent as soon as possible. We're looking forward to seeing you at Intercon!
-
-Best wishes,\\
-Sarah and Xavid
-
-Casting Hint:
-
-\MYcastinghint~\\
-\MYblues~\\
-\MYgreens
+\MYcastinghint
 }
 
 \parsedmacros

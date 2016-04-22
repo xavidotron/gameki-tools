@@ -23,9 +23,12 @@ def get_pdf_path(target, jobname=None):
     if target.startswith('joined-'):
         m = target[len('joined-'):]
         # TODO(xavid); this should come from config.yaml
-        in_paths = [get_pdf_path('Handouts/cover.tex', m),
-                    get_pdf_path('Handouts/rules-scenario.tex'),
-                    get_pdf_path('Gen/Charsheets/%s.tex' % m[1:])]
+        in_paths = [
+            get_pdf_path('listchar-%s' % m[1:]),
+            get_pdf_path('listblue-%s' % m[1:]),
+            get_pdf_path('listgreen-%s' % m[1:]),
+            get_pdf_path('abils-%s' % m[1:]),
+            ]
         out_path = 'Out/prod/%s.pdf' % target
         run('pdfjoin', ['-o', out_path] + in_paths)
         return out_path

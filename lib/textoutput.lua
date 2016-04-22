@@ -34,7 +34,7 @@ else
   charmap[0x7C] = "--"
 end
 
-local accents = require("Gameki/lib/accents")
+local accents = require(gamekilib .. "/accents")
 
 local spaces_pending = 0
 local eat_spaces = false

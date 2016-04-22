@@ -1,7 +1,5 @@
-% Input this early so it can set \GAMERUN.
-\input{${wellwishes}/Gameki/lib/parsejobname.sty} %$
-\documentclass[sheet]{wellwishes}
-\usepackage{\gamepath/Gameki/lib/text}
+\documentclass{gameki}
+\usepackage{\gamekilib/text}
 
 \begin{document}
 
@@ -9,31 +7,14 @@
 \def\mymacro{%
   {\escapechar=-1\edef\helper{\expandafter\string\ME}\helper}}
 
-\MAP{Green}{
-  Attach: \MYname.pdf=listgreen-\mymacro
-}
-\MAP{Blue}{
-  Attach: \MYname.pdf=listblue-\mymacro
-}
-
-%\EVERY{PC}{
 \SURFACEMAP{PC}{
-  From: wishing-well@pianojuice.net\\
+  From: \gameclassname-gms@mit.edu\\
   To: \MYemail\\
-  Subject: [Wishing Well] Character Packet and Rules\\
-  Attach: \MYname.pdf=listchar-\mymacro\\
-  \MYblues\\
-  \MYgreens\\
+  Subject: [\gamename] Character Packet and Rules\\
+  Attach: \MYname.pdf=joined-\mymacro\\
   Attach: Rules.pdf=Handouts/rules-scenario.tex
 
-  Dear Wishing Well LARPers,
-
-  Here are your sheets for Wishing Well at Intercon P.
-  If you have any questions, feel free to ask.
-  We look forward to seeing you soon!
-
-  Best wishes,\\
-  \textasciitilde Sarah and Xavid
+  Attached are your sheets for \gamename{} and the game rules.
 }
 
 \parsedmacros
