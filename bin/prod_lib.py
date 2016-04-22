@@ -1,9 +1,9 @@
 import subprocess, sys, os
 
-GAMEKI_DIR = os.path.dirname(os.path.dirname(__file__))
+GAMEKI_DIR = os.path.relpath(os.path.dirname(os.path.dirname(__file__)))
 
-def prod(target, extra_args=[]):
-    cmd = [GAMEKI_DIR + '/bin/prod'] + extra_args + [target]
+def run(program, args):
+    cmd = [program] + args
     print cmd
     process = subprocess.Popen(cmd,
                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -16,13 +16,35 @@ def prod(target, extra_args=[]):
         sys.exit(1)
     return stdout
 
-def get_pdf(target):
-    prod(target)
-    if '/' in target:
+def prod(target, extra_args=[]):
+    return run(GAMEKI_DIR + '/bin/prod', extra_args + [target])
+
+def get_pdf_path(target, jobname=None):
+    if target.startswith('joined-'):
+        m = target[len('joined-'):]
+        # TODO(xavid); this should come from config.yaml
+        in_paths = [get_pdf_path('Handouts/cover.tex', m),
+                    get_pdf_path('Handouts/rules-scenario.tex'),
+                    get_pdf_path('Gen/Charsheets/%s.tex' % m[1:])]
+        out_path = 'Out/prod/%s.pdf' % target
+        run('pdfjoin', ['-o', out_path] + in_paths)
+        return out_path
+
+    args = []
+    if jobname:
+        args += ['-j', jobname]
+    prod(target, args)
+    if jobname:
+        return 'Out/%s/%s.pdf' % (os.path.basename(target)[:-len('.tex')],
+                                  jobname)
+    elif '/' in target:
         assert target.endswith('.tex')
-        pdf = 'Out/' + target[:-len('.tex')] + '.pdf'
+        return 'Out/' + target[:-len('.tex')] + '.pdf'
     else:
-        pdf = 'Out/prod/%s.pdf' % target
+        return 'Out/prod/%s.pdf' % target
+
+def get_pdf(target):
+    pdf = get_pdf_path(target)
     with open(pdf) as fil:
         return fil.read()
 

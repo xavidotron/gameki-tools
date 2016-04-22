@@ -1,0 +1,29 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+import subprocess, sys, os, glob
+import yaml
+import argparse, getpass
+
+from prod_lib import *
+
+macros = [
+    unicode(m.strip(), 'utf-8')
+    for m in
+    get_text(GAMEKI_DIR + '/lib/charmacros.tex').strip().split('\n')]
+
+rules = get_pdf_path('Handouts/rules-scenario.tex')
+for m in macros:
+    cover = get_pdf_path('Handouts/cover.tex', m[1:])
+    body = get_pdf_path('Charsheets/%s.tex' % m[2:])
+    statcard = get_pdf_path('statcards-%s' % m[1:])
+
+    try:
+        os.makedirs('Out/book/')
+    except OSError:
+        pass
+    joined = 'Out/book/%s-joined.pdf' % m[1:]
+    run('pdfjoin', ['-o', joined, cover, rules, body])
+    book = 'Out/book/%s-book.pdf' % m[1:]
+    run('Gameki/bin/backbook.sh', [joined, statcard, book])
+    print 'Wrote %s.' % book
