@@ -29,26 +29,28 @@
     \stripdashb#2\endstrip
   \fi
 }
+\def\secondcharswitch#1#2#3\endswitch{%
+  %\typeout{#1:#2:#3}%
+  \ifnum`#2=\uccode`#2\relax% If the second char is uppercase (cJamesBond)
+    \def\parsedmacros{\csname#1#2#3\endcsname{}}%
+  \else% Keep defaults, jobname not overridden (whatever)
+  \fi
+}
 
-% #1 and #2 are the first two characters of the pre-dash part. #2 and #3 might
-% be empty.
-\def\parsejobname#1#2#3-#4\endparse{%
-  \def\tmp{#4}%
+\def\parsejobname#1-#2\endparse{%
+  \def\tmp{#2}%
   \ifx\tmp\empty\relax% No dash in jobname
-    \ifnum0<0#1#2#3\relax% If it's a number (2)
-      \def\GAMERUN{#1#2#3}%
+    \ifnum0<0#1\relax% If it's a number (2)
+      \def\GAMERUN{#1}%
     \else
-      \ifnum`#2=\uccode`#2\relax% If the second char is uppercase (cJamesBond)
-        \def\parsedmacros{\csname#1#2#3\endcsname{}}%
-      \else% Keep defaults, jobname not overridden (whatever)
-      \fi
+      \secondcharswitch#1\endswitch%
     \fi
   \else% Dash in jobname
-    \stripdashset#4\endstrip
-    \ifnum0<0#1#2#3\relax% If predash is a number (2-cJamesBond)
-      \def\GAMERUN{#1#2#3}%
+    \stripdasha#2\endstrip
+    \ifnum0<0#1\relax% If predash is a number (2-cJamesBond)
+      \def\GAMERUN{#1}%
     \else% Not number (listchar-cJamesBond)
-      \def\gameoption{#1#2#3}
+      \def\gameoption{#1}
     \fi
   \fi
 }
