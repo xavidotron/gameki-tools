@@ -95,7 +95,7 @@ for f in "$@" ; do
     if [ -n "$jobname" ] ; then
 	flags=("${flags[@]}" "-jobname=$jobname")
         # If we reimplement in python, we could use os.path.relpath()
-	outdir="$reldir$outdir/$(basename "$f" | cut -d . -f 1)"
+	outdir="$outdir/$(basename "$f" | cut -d . -f 1)"
     else
 	outdir="$outdir/$updir$(dirname "$f")" 
     fi
