@@ -118,9 +118,6 @@ for m in macros:
             key, val = l.split(': ', 1)
             if key == 'Attach':
                 name, target = val.strip().split('=', 1)
-                # TODO(xavid): this code for attach doesn't support run at all
-                assert args.run is None, (
-                    "--run is not supported with attachments.")
                 attachments.append((name, get_pdf(target), 'application/pdf'))
             else:
                 d[key.lower()] = val.strip()

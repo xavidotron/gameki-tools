@@ -2,12 +2,13 @@
 
 % We allow information to be passed into Gameki LaTeX files through the jobname.
 % This can take several different formats:
-% listchar-cJamesBond: uses listchar as the game option; set \parsedmacros
-%                      to \cJamesBond{}
-% 2-cJamesBond: set GAMERUN to 2; set \parsedmacros to \cJamesBond{}
-% 2: set GAMERUN to 2
+% 2 (numeric): set GAMERUN to 2
 % cJamesBond (second letter capitalized): set \parsedmacros to \cJamesBond{}
 % whatever (jobname possibly not specified): set \parsedmacros to every PC
+% 2-cJamesBond: set GAMERUN to 2; set \parsedmacros to \cJamesBond{}
+% listchar-cJamesBond: uses listchar as the game option; set \parsedmacros
+%                      to \cJamesBond{}
+% listchar-2-cJamesBond
 %
 % (\GAMERUN must be set early (before gametex.sty) to have an effect.)
 
@@ -15,8 +16,19 @@
 \def\gameoption{sheet}
 \def\parsedmacros{EVERY{PC}{\ME{}\par}}
 
-% Helper
-\def\stripdashset#1-\endstrip{\def\parsedmacros{\csname#1\endcsname{}}}
+% Helpers
+\def\stripdashb#1-\endstrip{%
+  \def\parsedmacros{\csname#1\endcsname{}}%
+}
+\def\stripdasha#1-#2\endstrip{%
+  \def\tmp{#2}%
+  \ifx\tmp\empty\relax% no second dash
+    \def\parsedmacros{\csname#1\endcsname{}}%
+  \else% second dash
+    \def\GAMERUN{#1}%
+    \stripdashb#2\endstrip
+  \fi
+}
 
 % #1 and #2 are the first two characters of the pre-dash part. #2 and #3 might
 % be empty.

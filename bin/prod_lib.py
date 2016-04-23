@@ -24,10 +24,10 @@ def get_pdf_path(target, jobname=None):
         m = target[len('joined-'):]
         # TODO(xavid); this should come from config.yaml
         in_paths = [
-            get_pdf_path('listchar-%s' % m[1:]),
-            get_pdf_path('listblue-%s' % m[1:]),
-            get_pdf_path('listgreen-%s' % m[1:]),
-            get_pdf_path('abils-%s' % m[1:]),
+            get_pdf_path('listchar-%s' % m),
+            get_pdf_path('listblue-%s' % m),
+            get_pdf_path('listgreen-%s' % m),
+            get_pdf_path('abils-%s' % m),
             ]
         out_path = 'Out/prod/%s.pdf' % target
         run('pdfjoin', ['-o', out_path] + in_paths)
