@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import sys, string
+import os, sys, string
 import collections, re
 import csv, cgi
 
@@ -20,24 +20,34 @@ TIME_HEADING_RE = re.compile(r'When|Time\b')
 CHARS = []
 
 COMMENT_RE = re.compile(r'^\s*%')
-PC_RE = re.compile(r'\\NEW\{PC\}\{(\\[a-zA-Z]+)\}')
-NAME_RE = re.compile(r'\\s\\MYname\{(.+)\}')
-DESC_RE = re.compile(r'\\s\\MYdesc\{(.+)\}')
-with open('Lists/char-LIST.tex') as charf:
+PC_RE = re.compile(r'\\NEW\{[a-zA-Z]+\}\{(\\[a-zA-Z]+)\}')
+NAME_RE = re.compile(r'\\s\\MYname\s*\{(.+)\}')
+DESC_RE = re.compile(r'\\s\\MYdesc\s*\{(.+)\}')
+FILE_RE = re.compile(r'\\s\\MYfile\s*\{(.+)\}')
+
+if len(sys.argv) <= 1:
+    sys.stderr.write("Usage: %s responses.csv > interface.html\n" % __file__)
+    sys.exit(1)
+
+GAMETEX_DIR = os.path.relpath(os.path.dirname(os.path.dirname(os.path.abspath(os.path.dirname(__file__)))))
+
+with open(GAMETEX_DIR + '/Lists/char-LIST.tex') as charf:
     curr_macro = None
     curr_desc = None
+    has_file = False
     for l in charf:
         if COMMENT_RE.search(l):
             continue
         m = PC_RE.search(l)
         if m:
-            if curr_macro:
+            if curr_macro and has_file:
                 CHARS.append((curr_macro, curr_desc))
             if m.group(1) == r'\cTest':
                 curr_macro = None
             else:
                 curr_macro = m.group(1)
             curr_desc = ''
+            has_file = False
             continue
         if curr_macro is None:
             continue
@@ -51,8 +61,13 @@ with open('Lists/char-LIST.tex') as charf:
         if m:
             curr_desc += ' (%s)' % m.group(1)
             continue
+
+        m = FILE_RE.search(l)
+        if m:
+            has_file = True
+            continue
     
-    if curr_macro:
+    if curr_macro and has_file:
         CHARS.append((curr_macro, curr_desc))
 
 RATINGS_RE = re.compile(r'^(.*) \[(.*)\]$')
@@ -291,8 +306,8 @@ function assign(cell) {
 }
 
 function getRun(run) {
-  var data = '%% Name this file Lists/run' + run + '-LIST.tex or similar, and\n'
-           + '%% set \\gamerun to ' + run + ' in your .cls file.\n\n';
+  var data = '%% Name this file Lists/runN-LIST.tex or similar, and set\n'
+           + '%% \\gamerun to N in your .cls file, where N is a number.\n\n';
   var row = document.getElementById('time' + run);
   var cell = row.firstElementChild;  // Slot letter
   cell = cell.nextElementSibling;  // Slot description
@@ -315,7 +330,7 @@ function getRun(run) {
   }
   console.log(data);
   var link = document.createElement("a");
-  link.download = 'run' + run + '-list.tex';
+  link.download = 'runN-LIST.tex';
   link.href = 'data:,' + encodeURIComponent(data);
   link.click();
   document.getElementById('text').innerHTML = '<pre>' + data + '</pre>';
@@ -404,7 +419,7 @@ for i in xrange(len(times)):
     print '<th class="timename">%s</th>' % TIME_SUB_RE.sub('', times[i])
     for cmacro,cname in CHARS:
         print '<td onclick="assign(this)"></td>'
-    print '<td class="download"><a href="#" onclick="getRun(\'%s\'); return false">Run %s</a></td>' % (
+    print '<td class="download"><a href="#" onclick="getRun(\'%s\'); return false">Slot %s</a></td>' % (
         string.uppercase[i], string.uppercase[i])
     print '</tr>'
 print '</table></div>'
