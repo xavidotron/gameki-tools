@@ -201,17 +201,20 @@ td.invalid {
 }
 
 #apps {
-  height: 70%;
+  height: 100%;
   width: 75%;
   overflow: auto;
-  position: relative;
+  position: absolute;
+  padding: 5px;
+  top: 0;
+  left: 0;
 }
 #text {
   position: absolute;
   top: 0;
   right: 0;
   width: 25%;
-  height: 70%;
+  height: 100%;
   overflow: auto;
   padding: 5px;
 }
@@ -220,8 +223,12 @@ dl {
 }
 #casting {
   padding: 5px;
-  height: 30%;
   overflow: auto;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: white;
 }
 * {
   box-sizing: border-box;
@@ -232,6 +239,12 @@ dt {
 }
 </style>'''
 print r'''<script>
+function init() {
+  var bheight = document.getElementById('casting').offsetHeight;
+  document.getElementById('apps').style.borderBottom = (bheight) + 'px solid';
+  document.getElementById('text').style.borderBottom = (bheight) + 'px solid';
+}
+
 function addClass(elem, cls) {
   if (elem.className) {
     elem.className += ' ' + cls;
@@ -339,7 +352,7 @@ function getRun(run) {
 var texts = [];
 </script>
 </head>
-<body>
+<body onload="init()">
 <div id="apps">
 <table>
 <tr>'''
