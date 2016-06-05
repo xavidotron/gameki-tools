@@ -10,3 +10,12 @@ Command-line tools useful for writing/running LARPs based on [GameTeX](http://we
 * `mail`: Mail out casting/costuming hints or packets based on GameTeX templates.
 * `prod`: Convenience script to prod sheets and such with GameTeX. Uses [latexmk](https://www.ctan.org/pkg/latexmk/) to avoid unnecessary rebuilds.
 * `book`: Typeset a packet as a foldable booklet.
+
+### Known Issues
+
+* Text output depends on accurate conversion between TeX characters/tokens and
+  Unicode. For unusual characters and formatting, this is not yet
+  implemented.
+* Several tools are powered by LuaTeX, which may have some slight differences
+  from pdfTeX/XeTeX. Reported issues include:
+  * File names for fonts can't have spaces in them.
