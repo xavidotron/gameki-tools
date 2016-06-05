@@ -36,7 +36,7 @@ def run(program, args, accept_no_output=False):
         return stdout
 
 def prod(target, extra_args=[], **kw):
-    return run(GAMEKI_DIR + 'bin/prod', ['-x'] + extra_args + [target], **kw)
+    return run(GAMEKI_DIR + 'bin/prod', extra_args + [target], **kw)
 
 def get_pdf_path(target, jobname=None, single_sided=False, color_sheets=False):
     if target.startswith('joined-'):
