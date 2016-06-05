@@ -14,7 +14,7 @@
 
 % Defaults.
 \def\gameoption{sheet}
-\def\parsedmacros{EVERY{PC}{\ME{}\par}}
+\def\parsedmacros{\production}
 
 % Helpers
 \def\stripdashb#1-\endstrip{%
