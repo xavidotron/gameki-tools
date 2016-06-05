@@ -14,8 +14,12 @@ Examples:
   $0 -l [-j cJamesBond] Gameki/Mail/casting.tex
 
 Options:
+  -s: use single-siding (don't put a blank page after sheets to make the page
+      count even)
+  -c: use color (\PDFPart) mode: single-siding and set background colors
   -l: use lualatex instead of pdflatex
   -t: use lualatex and cat the text output (from Gameki/lib/text.sty)
+  -x: use xelatex instead of pdflatex
   -j JOBNAME: pass JOBNAME as the jobname to the latex file
   -o OUTDIR: directory for output to go to
 EOF
@@ -44,14 +48,24 @@ lualatex="-pdflatex=lualatex %O %S"
 flags=("-pdf")
 extra=""
 cat_after=""
-while getopts "ltj:o:" optchar ; do
+tex="prod"
+while getopts "scltxj:o:" optchar ; do
   case "${optchar}" in
+      s)
+	  tex="single"
+	  ;;
+      c)
+	  tex="color"
+	  ;;
       l)
 	  flags=("${flags[@]}" "$lualatex")
 	  ;;
       t)
 	  flags=("${flags[@]}" "$lualatex")
 	  cat_after="true"
+	  ;;
+      x)
+	  flags=("${flags[@]}" "-xelatex")
 	  ;;
       j)
 	  jobname="$OPTARG"
@@ -81,7 +95,7 @@ if echo "$1" | egrep -q '^[^.]+-[^.]+$' ; then
     # Gameki/LaTeX/prod.tex.
     jobname="$1"
     shift
-    set "$dir/Gameki/lib/prod.tex"
+    set "$dir/Gameki/lib/$tex.tex"
 fi
 
 for f in "$@" ; do
@@ -105,7 +119,17 @@ for f in "$@" ; do
     # NOTE(xavid): setting outdir leads to an unnecessary extra pass when
     #              the .aux file didn't already exist. We could theoretically
     #              try to fix this.
-    latexmk -halt-on-error -interaction=nonstopmode "${flags[@]}" "$f" >&2 </dev/null
+    if latexmk -halt-on-error -interaction=nonstopmode "${flags[@]}" "$f" >&2 </dev/null ; then
+	:
+    else
+	status="$?"
+	# Clean any old or partial .pdf file, so latexmk doesn't get confused.
+	if [ -z "$jobname" ] ; then
+	    jobname="$(basename "$1" | cut -d . -f 1)"
+	fi
+	rm -f "$outdir/$jobname.pdf"
+	exit "$status"
+    fi
 done
 
 if [ $# -ge 2 ] ; then

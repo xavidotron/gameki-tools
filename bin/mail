@@ -48,7 +48,7 @@ def send(email, attachments, s):
 ###
 
 templates = [os.path.basename(p)[:-len('.tex')]
-             for p in glob.glob(GAMEKI_DIR + '/Mail/*.tex')]
+             for p in glob.glob(GAMEKI_DIR + 'Mail/*.tex')]
 
 parser = argparse.ArgumentParser()
 group = parser.add_mutually_exclusive_group(required=True)
@@ -74,7 +74,7 @@ if args.list:
     sys.exit(0)
 if args.emails:
     print ', '.join(
-        get_text(GAMEKI_DIR + '/lib/emails.tex', args.run).strip().split('\n'))
+        get_text(GAMEKI_DIR + 'lib/emails.tex', args.run).strip().split('\n'))
     sys.exit(0)
 
 if args.macro:
@@ -83,11 +83,11 @@ else:
     macros = [
         unicode(m.strip(), 'utf-8')
         for m in
-        get_text(GAMEKI_DIR + '/lib/charmacros.tex').strip().split('\n')]
+        get_text(GAMEKI_DIR + 'lib/charmacros.tex').strip().split('\n')]
 
 server = None
 if args.send or args.dry_run:
-    config = yaml.safe_load(open(GAMEKI_DIR + '/config.yaml'))
+    config = yaml.safe_load(open(GAMEKI_DIR + 'config.yaml'))
     server_host = config['mail']['server']
     username = config['mail']['username']
     server = smtplib.SMTP(server_host, 587)
@@ -104,7 +104,7 @@ for m in macros:
         jobname = m
     if args.run:
         jobname = args.run + '-' + jobname
-    text = get_text(GAMEKI_DIR + '/Mail/' + args.template + '.tex', jobname)
+    text = get_text(GAMEKI_DIR + 'Mail/' + args.template + '.tex', jobname)
 
     if server:
         lines = text.split('\n')

@@ -10,7 +10,7 @@ from prod_lib import *
 macros = [
     unicode(m.strip(), 'utf-8')
     for m in
-    get_text(GAMEKI_DIR + '/lib/charmacros.tex').strip().split('\n')]
+    get_text(GAMEKI_DIR + 'lib/charmacros.tex').strip().split('\n')]
 
 rules = get_pdf_path('Handouts/rules-scenario.tex')
 for m in macros:
