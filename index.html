@@ -28,8 +28,11 @@
         </ul>
       </header>
       <section>
-        <h2>
-<a id="about-gameki-tools" class="anchor" href="#about-gameki-tools" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>About Gameki Tools</h2>
+        <h1>
+<a id="gameki-tools" class="anchor" href="#gameki-tools" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Gameki Tools</h1>
+
+<h2>
+<a id="about" class="anchor" href="#about" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>About</h2>
 
 <p>Command-line tools useful for writing/running LARPs based on <a href="http://web.mit.edu/kenclary/Public/Guild/GameTeX/">GameTeX</a>. Used for the backend of <a href="http://xavidotron.github.io/ep_gameki/">Gameki</a>, but can also be used directly with an ordinary GameTeX repo.</p>
 
@@ -45,6 +48,22 @@
 <code>prod</code>: Convenience script to prod sheets and such with GameTeX. Uses <a href="https://www.ctan.org/pkg/latexmk/">latexmk</a> to avoid unnecessary rebuilds.</li>
 <li>
 <code>book</code>: Typeset a packet as a foldable booklet.</li>
+</ul>
+
+<h3>
+<a id="known-issues" class="anchor" href="#known-issues" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Known Issues</h3>
+
+<ul>
+<li>Text output depends on accurate conversion between TeX characters/tokens and
+Unicode. For unusual characters and formatting, this is not yet
+implemented.</li>
+<li>Several tools are powered by LuaTeX, which may have some slight differences
+from pdfTeX/XeTeX. Reported issues include:
+
+<ul>
+<li>File names for fonts can't have spaces in them.</li>
+</ul>
+</li>
 </ul>
       </section>
       <footer>
