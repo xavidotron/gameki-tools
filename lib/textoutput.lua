@@ -34,6 +34,39 @@ else
   charmap[0x7C] = "--"
 end
 
+-- https://github.com/Stepets/utf8.lua/blob/master/utf8.lua
+local function utf8char(unicode)
+  if unicode <= 0x7F then return string.char(unicode) end
+
+  if (unicode <= 0x7FF) then
+    local Byte0 = 0xC0 + math.floor(unicode / 0x40);
+    local Byte1 = 0x80 + (unicode % 0x40);
+    return string.char(Byte0, Byte1);
+  end;
+
+  if (unicode <= 0xFFFF) then
+    local Byte0 = 0xE0 +  math.floor(unicode / 0x1000);
+    local Byte1 = 0x80 + (math.floor(unicode / 0x40) % 0x40);
+    local Byte2 = 0x80 + (unicode % 0x40);
+    return string.char(Byte0, Byte1, Byte2);
+  end;
+
+  if (unicode <= 0x10FFFF) then
+    local code = unicode
+    local Byte3= 0x80 + (code % 0x40);
+    code       = math.floor(code / 0x40)
+    local Byte2= 0x80 + (code % 0x40);
+    code       = math.floor(code / 0x40)
+    local Byte1= 0x80 + (code % 0x40);
+    code       = math.floor(code / 0x40)
+    local Byte0= 0xF0 + code;
+
+    return string.char(Byte0, Byte1, Byte2, Byte3);
+  end;
+
+  error 'Unicode cannot be greater than U+10FFFF!'
+end
+
 local accents = require(gamekilib .. "/accents")
 
 local spaces_pending = 0
@@ -49,7 +82,7 @@ function gothru(h,prof)
       gothru(t.list,prof+1)
     end
     if t.id == glyph then
-      if debug then texio.write(' font=' .. t.font .. ' char=' .. string.char(t.char) .. ' (' .. string.format('0x%X', t.char) .. ') width=' ..  font.fonts[t.font].characters[t.char]['width']) end
+      if debug then texio.write(' font=' .. t.font .. ' char=' .. utf8char(t.char) .. ' (' .. string.format('0x%X', t.char) .. ')') end
       if spaces_pending > 0 then
         for i=1,spaces_pending do
           io.write(" ")
@@ -64,7 +97,9 @@ function gothru(h,prof)
 	end
       else
         local char
-        if charmap[t.char] then
+	if t.subtype == 256 then
+	  char = utf8char(t.char)
+        elseif charmap[t.char] then
           char = charmap[t.char]
         else
           char = string.char(t.char)
@@ -148,4 +183,4 @@ openout = function (filename)
   end
 end
 
-callback.register("pre_linebreak_filter", process)
+luatexbase.add_to_callback("pre_linebreak_filter", process, "process")
