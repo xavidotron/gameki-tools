@@ -23,6 +23,7 @@ COMMENT_RE = re.compile(r'^\s*%')
 PC_RE = re.compile(r'\\NEW\{[a-zA-Z]+\}\{(\\[a-zA-Z]+)\}')
 NAME_RE = re.compile(r'\\s\\MYname\s*\{(.+)\}')
 DESC_RE = re.compile(r'\\s\\MYdesc\s*\{(.+)\}')
+SEX_RE = re.compile(r'\\s\\MYsex\s*\{(.+)\}')
 FILE_RE = re.compile(r'\\s\\MYfile\s*\{(.+)\}')
 
 if len(sys.argv) <= 1:
@@ -34,6 +35,7 @@ GAMETEX_DIR = os.path.relpath(os.path.dirname(os.path.dirname(os.path.abspath(os
 with open(GAMETEX_DIR + '/Lists/char-LIST.tex') as charf:
     curr_macro = None
     curr_desc = None
+    curr_sex = None
     has_file = False
     for l in charf:
         if COMMENT_RE.search(l):
@@ -41,7 +43,7 @@ with open(GAMETEX_DIR + '/Lists/char-LIST.tex') as charf:
         m = PC_RE.search(l)
         if m:
             if curr_macro and has_file:
-                CHARS.append((curr_macro, curr_desc))
+                CHARS.append((curr_macro, curr_desc, curr_sex))
             if m.group(1) == r'\cTest':
                 curr_macro = None
             else:
@@ -66,9 +68,13 @@ with open(GAMETEX_DIR + '/Lists/char-LIST.tex') as charf:
         if m:
             has_file = True
             continue
+        
+        m = SEX_RE.search(l)
+        if m:
+            curr_sex = m.group(1)
     
     if curr_macro and has_file:
-        CHARS.append((curr_macro, curr_desc))
+        CHARS.append((curr_macro, curr_desc, curr_sex))
 
 RATINGS_RE = re.compile(r'^(.*) \[(.*)\]$')
 TIME_SPLIT_RE = re.compile(r', (?=\d)')
@@ -181,10 +187,30 @@ tr.impossible {
   background-color: Grey;
 }
 td.filled {
-  background-color: LightGreen;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 td.invalid {
-  background-color: LightSalmon;
+  color: red;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+td.male {
+  background-color: LightBlue;
+}
+td.female {
+  background-color: LightPink;
+}
+td.neuter {
+  background-color: LightYellow;
+}
+td.any {
+  background-color: #B9F;
 }
 
 .n5 {
@@ -309,11 +335,33 @@ function assign(cell) {
   }
   assignments[name] = cell;
   assigned_rows[name] = lastRow;
+  var gender;
+  var genderNode = document.getElementById('macros').children[
+      [].indexOf.call(cell.parentElement.children, cell) - 2];
+  var gender_possibilities;
+  if (genderNode.className == 'any') {
+    gender_possibilities = ['female', 'male'];
+  } else {
+    gender_possibilities = [genderNode.className];
+  }
+  if (cell.className == "") {
+    gender = gender_possibilities[0];
+  } else {
+    gender = cell.className.split(' ')[1];
+    if (cell.innerHTML == name) {
+      var i = gender_possibilities.indexOf(gender);
+      if (i + 1 >= gender_possibilities.length) {
+        gender = gender_possibilities[0];
+      } else {
+        gender = gender_possibilities[i + 1];
+      }
+    }
+  }
   cell.innerHTML = name;
   if (cell.parentElement.className == "impossible") {
-    cell.className = "invalid";
+    cell.className = "invalid " + gender;
   } else {
-    cell.className = "filled";
+    cell.className = "filled " + gender;
   }
   cell.dataset.email = email;
 }
@@ -328,10 +376,16 @@ function getRun(run) {
   var macros = document.getElementById('macros');
   var macro = macros.firstElementChild;
   while (cell.className != "download") {
-    if (cell.className == "filled" || cell.className == "invalid") {
+    var state = cell.className.split(' ')[0];
+    var gender = cell.className.split(' ')[1];
+    if (state == "filled" || state == "invalid") {
       data += '\\updatemacro{' + macro.innerHTML + '}{\n  \\rs\\MYplayer{' + cell.innerHTML
-            + '}\n  \\rs\\MYemail{' + cell.dataset.email + '}\n}';
-      if (cell.className == "invalid") {
+            + '}\n  \\rs\\MYemail{' + cell.dataset.email + '}\n';
+      if (gender != macro.className) {
+        data += '  \\rs\\MYsex{\\' + gender + '}\n';
+      }
+      data += '}'
+      if (state == "invalid") {
         data += '  % Time conflict!';
       }
       data += '\n';
@@ -415,22 +469,32 @@ for index in xrange(len(apps)):
 print '''</table>
 </div>'''
 
+def get_sex_class(csex):
+    if csex == r'\male':
+        return 'male'
+    elif csex == r'\female':
+        return 'female'
+    elif csex == r'\neuter':
+        return 'neuter'
+    else:
+        return 'any'
+
 print '<div id="text">Select an app to see free-answer questions here.</div>'
 print '<div id="casting"><table>'
 print '<tr id="namerow"><th colspan="2" rowspan="2">Time Slot</th>'
-for cmacro,cname in CHARS:
-    print '<td>%s</td>' % cname
+for cmacro,cname,csex in CHARS:
+    print '<td class="%s">%s</td>' % (get_sex_class(csex), cname)
 print '<th rowspan="2">Get</th>'
 print '</tr>'
 print '<tr id="macros">'
-for cmacro,cname in CHARS:
-    print '<td>%s</td>' % cmacro
+for cmacro,cname,csex in CHARS:
+    print '<td class="%s">%s</td>' % (get_sex_class(csex), cmacro)
 print '</tr>'
 for i in xrange(len(times)):
     print '<tr id="time%s">' % (string.uppercase[i])
     print '<th>%s: %s</th>' % (string.uppercase[i], totals[i])
     print '<th class="timename">%s</th>' % TIME_SUB_RE.sub('', times[i])
-    for cmacro,cname in CHARS:
+    for cmacro,cname,csex in CHARS:
         print '<td onclick="assign(this)"></td>'
     print '<td class="download"><a href="#" onclick="getRun(\'%s\'); return false">Slot %s</a></td>' % (
         string.uppercase[i], string.uppercase[i])
