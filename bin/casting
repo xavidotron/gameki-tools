@@ -77,7 +77,7 @@ with open(GAMETEX_DIR + '/Lists/char-LIST.tex') as charf:
         CHARS.append((curr_macro, curr_desc, curr_sex))
 
 RATINGS_RE = re.compile(r'^(.*) \[(.*)\]$')
-TIME_SPLIT_RE = re.compile(r', (?=\d)')
+TIME_SPLIT_RE = re.compile(r'[,;] ?(?=\d)')
 TIME_SUB_RE = re.compile(r'(?:ur)?day, \w+ \d+th$')
 
 time_index = None
