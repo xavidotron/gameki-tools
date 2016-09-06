@@ -81,6 +81,13 @@ function gothru(h,prof)
       --texio.write(' w=' .. t.width .. ' h=' .. t.height .. ' d=' .. t.depth .. ' s=' .. t.shift )
       gothru(t.list,prof+1)
     end
+    if t.id == disc then
+      if t.replace then
+        if debug then texio.write(' => ' .. node.type(t.replace.id)) end
+        t = t.replace
+      end
+      eat_spaces = false
+    end
     if t.id == glyph then
       if debug then texio.write(' font=' .. t.font .. ' char=' .. utf8char(t.char) .. ' (' .. string.format('0x%X', t.char) .. ')') end
       if spaces_pending > 0 then
@@ -135,9 +142,6 @@ function gothru(h,prof)
 	spaces_pending = 0
 	eat_spaces = true
       end
-    end
-    if t.id == disc then
-      eat_spaces = false
     end
     if t.id == rule then
       if spaces_pending > 0 then
