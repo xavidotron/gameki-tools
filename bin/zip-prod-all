@@ -1,17 +1,26 @@
-#!/bin/bash
+#!/usr/bin/python
 
-set -e
+import os, sys, subprocess, zipfile
+from prod_lib import *
+from book_lib import *
 
-run="${1:-0}"
+if len(sys.argv) > 1:
+    run = sys.argv[1]
+else:
+    run = '0'
 
-dir="$(mktemp -d)"
-mkdir -p "$dir/toolate"
+game = 'toolate'
 
-Gameki/bin/prod -r "$run" -p "$dir/toolate/" Handouts/gm-notes.tex Handouts/calendar.tex Handouts/events.tex
+with zipfile.ZipFile(sys.stdout, 'w') as zipout:
+    for f in ('gm-notes', 'calendar', 'events'):
+        p = get_pdf_path('Handouts/%s.tex' % f, run=run)
+        zipout.write(p, '%s/%s.pdf' % (game, f))
 
-Gameki/bin/prod -p "$dir/toolate/badges.pdf" "badges-$run-production"
-Gameki/bin/prod -p "$dir/toolate/cards.pdf" "carditems-$run-production"
+    for t, o in (('badges', "badges-%s-production" % run),
+                 ('cards', "carditems-%s-production" % run)):
+        p = get_pdf_path(o)
+        zipout.write(p, '%s/%s.pdf' % (game, t))
 
-Gameki/bin/book --run "$run" --pdf-dir "$dir/toolate/Characters" --names >&2
-
-(cd "$dir" && zip -r - "toolate")
+    for outpath in get_book_paths(run=run, use_names=True):
+        _, shortname = os.path.basename(outpath).split('-', 1)
+        zipout.write(outpath, '%s/Characters/%s.pdf' % (game, shortname))
