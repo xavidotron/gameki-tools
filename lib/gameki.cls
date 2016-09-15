@@ -18,21 +18,21 @@
 
 % Helpers
 \def\stripdashb#1-\endstrip{%
-  \def\parsedmacros{\csname#1\endcsname{}}%
+  \gdef\parsedmacros{\csname#1\endcsname{}}%
 }
 \def\stripdasha#1-#2\endstrip{%
   \def\tmp{#2}%
   \ifx\tmp\empty\relax% no second dash
-    \def\parsedmacros{\csname#1\endcsname{}}%
+    \gdef\parsedmacros{\csname#1\endcsname{}}%
   \else% second dash
-    \def\GAMERUN{#1}%
+    \gdef\GAMERUN{#1}%
     \stripdashb#2\endstrip
   \fi
 }
 \def\secondcharswitch#1#2#3\endswitch{%
   %\typeout{#1:#2:#3}%
   \ifnum`#2=\uccode`#2\relax% If the second char is uppercase (cJamesBond)
-    \def\parsedmacros{\csname#1#2#3\endcsname{}}%
+    \gdef\parsedmacros{\csname#1#2#3\endcsname{}}%
   \else% Keep defaults, jobname not overridden (whatever)
   \fi
 }
@@ -41,23 +41,23 @@
   \def\tmp{#2}%
   \ifx\tmp\empty\relax% No dash in jobname
     \ifnum0<0#1\relax% If it's a number (2)
-      \def\GAMERUN{#1}%
+      \gdef\GAMERUN{#1}%
     \else
       \secondcharswitch#1\endswitch%
     \fi
   \else% Dash in jobname
     \stripdasha#2\endstrip
     \ifnum0<0#1\relax% If predash is a number (2-cJamesBond)
-      \def\GAMERUN{#1}%
+      \gdef\GAMERUN{#1}%
     \else% Not number (listchar-cJamesBond)
-      \def\gameoption{#1}
+      \gdef\gameoption{#1}
     \fi
   \fi
 }
 
 % We need an empty and a dash at the end so that the macro parses if there's
 % no dash in \jobname. If there is one, the extra dash will get stripped off.
-\expandafter\parsejobname\jobname-\endparse
+\csname gamekihook\endcsname{\expandafter\parsejobname\jobname-\endparse}
 
 % Load the gameki class based on the gameclassname environment variable
 % (set by Gameki/bin/prod).

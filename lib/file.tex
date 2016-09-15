@@ -1,0 +1,17 @@
+\def\stripcolon#1:\endstrip{%
+  \def\jobname{#1}%
+}
+\def\parsejobname#1:#2:#3\endparse{%
+  \def\GAMERUN{#1}%
+  \def\file{#2}%
+  \def\tmp{#3}%
+  \ifx\tmp\empty\else
+    \stripcolon#3\endstrip
+  \fi
+}
+
+% Don't try to parse jobname in gameki.cls
+\def\gamekihook#1{}
+
+\expandafter\parsejobname\jobname:\endparse
+\input{\file.tex}

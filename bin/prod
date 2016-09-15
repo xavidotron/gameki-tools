@@ -5,23 +5,26 @@ set -e
 function usage {
     cat >&2 <<EOF
 Usage:
-  $0 [-l|-t] [-j JOBNAME] [-o OUTDIR] PATH.tex [PATH.tex...]
+  $0 [-l|-t] [-j JOBNAME] [-o OUTDIR] [-r RUN] PATH.tex [PATH.tex...]
   $0 [-o OUTDIR] OPTION-MACRO
 
 Examples:
   $0 Dir/file.tex
   $0 listchar-cJamesBond
+  $0 listchar-2-cJamesBond
   $0 -l [-j cJamesBond] Gameki/Mail/casting.tex
 
 Options:
   -s: use single-siding (don't put a blank page after sheets to make the page
       count even)
   -c: use color (\PDFPart) mode: single-siding and set background colors
+  -r: prod a file using the given run instead of the default
   -l: use lualatex instead of pdflatex
   -t: use lualatex and cat the text output (from Gameki/lib/text.sty)
   -x: use xelatex instead of pdflatex
   -j JOBNAME: pass JOBNAME as the jobname to the latex file
-  -o OUTDIR: directory for output to go to
+  -o OUTDIR: directory for all output files to go to
+  -p PDFDEST: copy pdf to this location on successful production
 EOF
 }
 
@@ -49,7 +52,9 @@ flags=("-pdf")
 extra=""
 cat_after=""
 tex="prod"
-while getopts "scltxj:o:" optchar ; do
+pdfdir=""
+run=""
+while getopts "scltxj:o:p:r:" optchar ; do
   case "${optchar}" in
       s)
 	  tex="single"
@@ -72,6 +77,12 @@ while getopts "scltxj:o:" optchar ; do
 	  ;;
       o)
 	  outdir="$OPTARG"
+	  ;;
+      p)
+	  pdfdir="$OPTARG"
+	  ;;
+      r)
+	  run="$OPTARG"
 	  ;;
       \?)
 	  usage
@@ -98,36 +109,48 @@ if echo "$1" | egrep -q '^[^.]+-[^.]+$' ; then
     set "$dir/Gameki/lib/$tex.tex"
 fi
 
+if [ -z "$outdir" ] ; then
+    outdir="Out"
+    if [ -n "$reldir" ] ; then
+	outdir="$reldir$outdir"
+    fi
+fi
+
 for f in "$@" ; do
 
-    if [ -z "$outdir" ] ; then
-	outdir="Out"
-	if [ -n "$reldir" ] ; then
-	    outdir="$reldir$outdir"
+    if [ -n "$run" ] ; then
+	if [ -n "$jobname" ] ; then
+	    jn="$run:$(echo $f | cut -d . -f 1):$jobname"
+	else
+	    jn="$run:$(echo $f | cut -d . -f 1)"
 	fi
-    fi
-    if [ -n "$jobname" ] ; then
+	flags=("${flags[@]}" "-jobname=$jn")
+        f="$dir/Gameki/lib/file.tex"
+	od="$outdir/$(basename "$f" | cut -d . -f 1)"
+	mkdir -p "$(dirname "$od/$jn")"
+    elif [ -n "$jobname" ] ; then
 	flags=("${flags[@]}" "-jobname=$jobname")
         # If we reimplement in python, we could use os.path.relpath()
-	outdir="$outdir/$(basename "$f" | cut -d . -f 1)"
+	jn="$jobname"
+	od="$outdir/$(basename "$f" | cut -d . -f 1)"
     else
-	outdir="$outdir/$updir$(dirname "$f")" 
+	jn="$(basename "$f" | cut -d . -f 1)"
+	od="$outdir/$updir$(dirname "$f")" 
     fi
-    mkdir -p "$outdir"   
-    flags=("-outdir=$outdir" "${flags[@]}")
+    mkdir -p "$od"   
+    flags=("-outdir=$od" "${flags[@]}")
     
     # NOTE(xavid): setting outdir leads to an unnecessary extra pass when
     #              the .aux file didn't already exist. We could theoretically
     #              try to fix this.
     if latexmk -halt-on-error -interaction=nonstopmode "${flags[@]}" "$f" >&2 </dev/null ; then
-	:
+	if [ -n "$pdfdir" ] ; then
+	    cp -v "$od/$jn.pdf" "$pdfdir" >&2
+	fi
     else
 	status="$?"
 	# Clean any old or partial .pdf file, so latexmk doesn't get confused.
-	if [ -z "$jobname" ] ; then
-	    jobname="$(basename "$1" | cut -d . -f 1)"
-	fi
-	rm -f "$outdir/$jobname.pdf"
+	rm -f "$od/$jn.pdf"
 	exit "$status"
     fi
 done
@@ -137,8 +160,5 @@ if [ $# -ge 2 ] ; then
 fi
 
 if [ "$cat_after" ] ; then
-    if [ -z "$jobname" ] ; then
-	jobname="$(basename "$1" | cut -d . -f 1)"
-    fi
-    cat "$outdir/$jobname.txt"
+    cat "$od/$jn.txt"
 fi

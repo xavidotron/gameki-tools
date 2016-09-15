@@ -11,7 +11,7 @@ if GAMEKI_DIR == '.':
 else:
     GAMEKI_DIR += '/'
 
-def run(program, args, accept_no_output=False):
+def run_cmd(program, args, accept_no_output=False):
     cmd = [program] + args
     print ' '.join("'%s'" % e if ' ' in e else e for e in cmd)
     process = subprocess.Popen(cmd,
@@ -36,9 +36,10 @@ def run(program, args, accept_no_output=False):
         return stdout
 
 def prod(target, extra_args=[], **kw):
-    return run(GAMEKI_DIR + 'bin/prod', extra_args + [target], **kw)
+    return run_cmd(GAMEKI_DIR + 'bin/prod', extra_args + [target], **kw)
 
-def get_pdf_path(target, jobname=None, single_sided=False, color_sheets=False):
+def get_pdf_path(target, jobname=None, single_sided=False, color_sheets=False,
+                 run=None):
     if target.startswith('joined-'):
         m = target[len('joined-'):]
         # TODO(xavid); this should come from config.yaml
@@ -49,7 +50,7 @@ def get_pdf_path(target, jobname=None, single_sided=False, color_sheets=False):
             get_pdf_path('abils-%s' % m),
             ]
         out_path = TOP_DIR + 'Out/prod/%s.pdf' % target
-        run('pdfjoin', ['-o', out_path] + in_paths)
+        run_cmd('pdfjoin', ['-o', out_path] + in_paths)
         return out_path
 
     args = []
@@ -59,15 +60,25 @@ def get_pdf_path(target, jobname=None, single_sided=False, color_sheets=False):
         args.append('-s')
     elif color_sheets:
         args.append('-c')
+    if run is not None:
+        args += ['-r', run]
 
     if jobname:
-        outfile = TOP_DIR + 'Out/%s/%s.pdf' % (
-            os.path.basename(target)[:-len('.tex')], jobname)
+        if run is not None:
+            outfile = TOP_DIR + 'Out/file/%s:%s:%s.pdf' % (
+                run, target[:-len('.tex')], jobname)
+        else:
+            outfile = TOP_DIR + 'Out/%s/%s.pdf' % (
+                os.path.basename(target)[:-len('.tex')], jobname)
         if '/' in target:
             target = TOP_DIR + target
     elif '/' in target:
         assert target.endswith('.tex')
-        outfile = TOP_DIR + 'Out/' + target[:-len('.tex')] + '.pdf'
+        if run is not None:
+            outfile = TOP_DIR + 'Out/file/%s:%s.pdf' % (
+                run, target[:-len('.tex')])
+        else:
+            outfile = TOP_DIR + 'Out/' + target[:-len('.tex')] + '.pdf'
         target = TOP_DIR + target
     elif single_sided:
         outfile = TOP_DIR + 'Out/single/%s.pdf' % target
@@ -85,10 +96,12 @@ def get_pdf(target):
     with open(pdf) as fil:
         return fil.read()
 
-def get_text(tex, jobname=None):
+def get_text(tex, jobname=None, run=None):
     assert tex.endswith('.tex'), tex
     args = ['-t']
     if jobname:
         args.append('-j')
         args.append(jobname)
+    if run is not None:
+        args += ['-r', run]
     return prod(tex, args)
