@@ -9,6 +9,9 @@ mkdir -p "$dir/toolate"
 
 Gameki/bin/prod -r "$run" -p "$dir/toolate/" Handouts/gm-notes.tex Handouts/calendar.tex Handouts/events.tex
 
-Gameki/bin/book --run "$run" --pdf-dir "$dir/toolate/" --names >&2
+Gameki/bin/prod -p "$dir/toolate/badges.pdf" "badges-$run-production"
+Gameki/bin/prod -p "$dir/toolate/cards.pdf" "carditems-$run-production"
+
+Gameki/bin/book --run "$run" --pdf-dir "$dir/toolate/Characters" --names >&2
 
 (cd "$dir" && zip -r - "toolate")
