@@ -13,7 +13,7 @@ else:
 
 def run_cmd(program, args, accept_no_output=False):
     cmd = [program] + args
-    print ' '.join("'%s'" % e if ' ' in e else e for e in cmd)
+    #print ' '.join("'%s'" % e if ' ' in e else e for e in cmd)
     process = subprocess.Popen(cmd,
                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = process.communicate()

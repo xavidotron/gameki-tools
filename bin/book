@@ -49,7 +49,7 @@ for i in xrange(len(macros)):
     except OSError:
         pass
     if args.names:
-        name = names[i].replace('/', '-')
+        name = names[i].replace('/', '-').encode('utf-8')
     else:
         name = m[1:]
     joined = '%s/%s%s-packet.pdf' % (pdfdir, run_infix, name)

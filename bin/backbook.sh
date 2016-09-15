@@ -2,7 +2,7 @@
 
 set -e
 
-pages="$(/opt/local/bin/pdfinfo "$1" | awk '/Pages/ {print $2}')"
+pages="$(pdfinfo "$1" | awk '/Pages/ {print $2}')"
 
 needed="$(bc <<< "3 - $pages % 4")"
 
