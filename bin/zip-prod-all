@@ -23,4 +23,4 @@ with zipfile.ZipFile(sys.stdout, 'w') as zipout:
 
     for outpath in get_book_paths(run=run, use_names=True):
         _, shortname = os.path.basename(outpath).split('-', 1)
-        zipout.write(outpath, '%s/Characters/%s.pdf' % (game, shortname))
+        zipout.write(outpath, '%s/Characters/%s' % (game, shortname))
