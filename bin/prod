@@ -1,164 +1,134 @@
-#!/bin/bash
+#!/usr/bin/python
 
-set -e
+import subprocess, sys, os, glob
+import argparse
 
-function usage {
-    cat >&2 <<EOF
-Usage:
-  $0 [-l|-t] [-j JOBNAME] [-o OUTDIR] [-r RUN] PATH.tex [PATH.tex...]
-  $0 [-o OUTDIR] OPTION-MACRO
+parser = argparse.ArgumentParser(epilog=
+"""Examples:
+  %(prog)s Dir/file.tex
+  %(prog)s listchar-cJamesBond
+  %(prog)s listchar-2-cJamesBond
+  %(prog)s -l [-j cJamesBond] Gameki/Mail/casting.tex""",
+                                 formatter_class=argparse.RawTextHelpFormatter)
 
-Examples:
-  $0 Dir/file.tex
-  $0 listchar-cJamesBond
-  $0 listchar-2-cJamesBond
-  $0 -l [-j cJamesBond] Gameki/Mail/casting.tex
+parser.add_argument('target', nargs='+', help="files or option-macros to prod")
+parser.add_argument('--single', '-s', action='store_true', help="use single-siding (don't put a blank page after sheets to make the page count even)")
+parser.add_argument('--color', '-c', action='store_true', help="use color (\PDFPart) mode: single-siding and set background colors")
+parser.add_argument('--run', '-r', help="prod a file using the given run instead of the default")
+parser.add_argument('--lualatex', '-l', action="store_true", help="use lualatex instead of pdflatex")
+parser.add_argument('--text', '-t', action="store_true", help="use lualatex and cat the text output (from Gameki/lib/text.sty)")
+parser.add_argument('--xelatex', '-x', action="store_true", help="use xelatex instead of pdflatex")
+parser.add_argument('--jobname', '-j', help="pass JOBNAME as the jobname to the latex file")
+parser.add_argument('--outdir', '-o', help="directory for all output files to go to")
+parser.add_argument('--pdfdest', '-p', help="copy pdf to this location on successful production")
 
-Options:
-  -s: use single-siding (don't put a blank page after sheets to make the page
-      count even)
-  -c: use color (\PDFPart) mode: single-siding and set background colors
-  -r: prod a file using the given run instead of the default
-  -l: use lualatex instead of pdflatex
-  -t: use lualatex and cat the text output (from Gameki/lib/text.sty)
-  -x: use xelatex instead of pdflatex
-  -j JOBNAME: pass JOBNAME as the jobname to the latex file
-  -o OUTDIR: directory for all output files to go to
-  -p PDFDEST: copy pdf to this location on successful production
-EOF
-}
+args = parser.parse_args()
 
-reldir=""
-updir=""
-if ! [ -d "LaTeX" ] ; then
-    updir="$(basename "$(pwd)")/"
-    reldir="../"
-    while ! [ -d "$reldir/LaTeX" ] ; do
-	updir="$(cd "$reldir" && basename "$(pwd)")/$updir"
-	reldir="../$reldir"
-	if [ "$(cd "$reldir" && pwd)" == "/" ]; then
-	    echo "No LaTeX directiory found; are you in a GameTeX directory?" >&2
-	    exit 1
-	fi
-    done
-fi
+reldir = ""
+updir = ""
+if not os.path.exists("LaTeX"):
+    updir = os.path.basename(os.getcwd())
+    reldir = ".."
+    while not os.path.exists(os.path.join(reldir, "LaTeX")):
+	updir = os.path.join(os.path.basename(os.path.abspath(reldir)), updir)
+	reldir = os.path.join("..", reldir)
+	if os.path.abspath(reldir) == "/":
+	    print >>sys.stderr, "No LaTeX directiory found; are you in a GameTeX directory?"
+	    sys.exit(1)
 
-dir="$(cd "$reldir" && pwd)"
+dir = os.path.abspath(reldir)
 
 # Not all versions of latexmk support the -lualatex flag directly.
-lualatex="-pdflatex=lualatex %O %S"
+lualatex = "-pdflatex=lualatex %O %S"
 
-flags=("-pdf")
-extra=""
-cat_after=""
-tex="prod"
-pdfdir=""
-run=""
-while getopts "scltxj:o:p:r:" optchar ; do
-  case "${optchar}" in
-      s)
-	  tex="single"
-	  ;;
-      c)
-	  tex="color"
-	  ;;
-      l)
-	  flags=("${flags[@]}" "$lualatex")
-	  ;;
-      t)
-	  flags=("${flags[@]}" "$lualatex")
-	  cat_after="true"
-	  ;;
-      x)
-	  flags=("${flags[@]}" "-xelatex")
-	  ;;
-      j)
-	  jobname="$OPTARG"
-	  ;;
-      o)
-	  outdir="$OPTARG"
-	  ;;
-      p)
-	  pdfdir="$OPTARG"
-	  ;;
-      r)
-	  run="$OPTARG"
-	  ;;
-      \?)
-	  usage
-	  exit 1
-	  ;;
-  esac
-done
-shift $((OPTIND-1))
+flags = ["-pdf"]
+tex = "prod"
 
-if [ $# -le 0 ] ; then
-    usage
-    exit 1
-fi
+if args.single:
+    tex = "single"
+if args.color:
+    tex = "color"
 
-export TEXINPUTS="$dir/LaTeX/:$dir/Gameki/lib/:"
-export gameclassname="$(basename "$dir"/LaTeX/*.cls | cut -d . -f 1)"
-export "${gameclassname}"="$dir"
+if args.lualatex or args.text:
+    flags.append(lualatex)
+if args.xelatex:
+    flags.append("-xelatex")
 
-if echo "$1" | egrep -q '^[^.]+-[^.]+$' ; then
-    # If the arg has a dash and no dot, then it's a jobname to pass to
-    # Gameki/LaTeX/prod.tex.
-    jobname="$1"
-    shift
-    set "$dir/Gameki/lib/$tex.tex"
-fi
+clses = glob.glob(os.path.join(dir, 'LaTeX', '*.cls'))
+assert len(clses) == 1, clses
+gameclassname = os.path.basename(clses[0]).split('.', 1)[0]
+env = {
+    "TEXINPUTS": "%s/LaTeX/:%s/Gameki/lib/:" % (dir, dir),
+    "gameclassname": gameclassname,
+    gameclassname: dir,
+    "PATH": os.environ["PATH"],
+    "USER": os.environ["USER"],
+}
 
-if [ -z "$outdir" ] ; then
-    outdir="Out"
-    if [ -n "$reldir" ] ; then
-	outdir="$reldir$outdir"
-    fi
-fi
+filejobs = []
+for t in args.target:
+    if '-' in t and '.' not in t:
+        # If the arg has a dash and no dot, then it's a jobname to pass to
+        # Gameki/LaTeX/prod.tex.
+        filejobs.append((os.path.join(dir, 'Gameki', 'lib', tex + '.tex'), t))
+    else:
+        filejobs.append((t, args.jobname))
 
-for f in "$@" ; do
+outdir = args.outdir
+if not outdir:
+    outdir = "Out"
+    if reldir:
+	outdir = os.path.join(reldir, outdir)
 
-    if [ -n "$run" ] ; then
-	if [ -n "$jobname" ] ; then
-	    jn="$run:$(echo $f | cut -d . -f 1):$jobname"
-	else
-	    jn="$run:$(echo $f | cut -d . -f 1)"
-	fi
-	flags=("${flags[@]}" "-jobname=$jn")
-        f="$dir/Gameki/lib/file.tex"
-	od="$outdir/$(basename "$f" | cut -d . -f 1)"
-	mkdir -p "$(dirname "$od/$jn")"
-    elif [ -n "$jobname" ] ; then
-	flags=("${flags[@]}" "-jobname=$jobname")
+products = []
+for f,j in filejobs:
+    if args.run:
+        jn = run + ":" + f.split('.', 1)[0]
+	if j:
+	    jn += ":" + j
+	flags.append("-jobname=" + jn)
+        f = os.path.join(dir, "Gameki", "lib", "file.tex")
+	od = os.path.join(outdir, os.path.basename(f.split('.', 1)[0]))
+        os.makedirs(os.path.dirname(os.path.join(od, jn)))
+    elif j:
+	flags.append("-jobname=" + j)
+	jn = j
         # If we reimplement in python, we could use os.path.relpath()
-	jn="$jobname"
-	od="$outdir/$(basename "$f" | cut -d . -f 1)"
-    else
-	jn="$(basename "$f" | cut -d . -f 1)"
-	od="$outdir/$updir$(dirname "$f")" 
-    fi
-    mkdir -p "$od"   
-    flags=("-outdir=$od" "${flags[@]}")
-    
+	od = os.path.join(outdir, os.path.basename(f.split('.', 1)[0]))
+    else:
+	jn = os.path.basename(f.split('.', 1)[0])
+	od = os.path.join(outdir, updir, os.path.dirname(f))
+    try:
+        os.makedirs(od)
+    except OSError:
+        pass
+    flags = ["-outdir=" + od] + flags
+
+    product = os.path.join(od, jn + ".pdf")
     # NOTE(xavid): setting outdir leads to an unnecessary extra pass when
     #              the .aux file didn't already exist. We could theoretically
     #              try to fix this.
-    if latexmk -halt-on-error -interaction=nonstopmode "${flags[@]}" "$f" >&2 </dev/null ; then
-	if [ -n "$pdfdir" ] ; then
-	    cp -v "$od/$jn.pdf" "$pdfdir" >&2
-	fi
-    else
-	status="$?"
-	# Clean any old or partial .pdf file, so latexmk doesn't get confused.
-	rm -f "$od/$jn.pdf"
-	exit "$status"
-    fi
-done
+    try:
+        subprocess.check_call(
+            ["latexmk", "-halt-on-error", "-interaction=nonstopmode"]
+            + flags + [f], stdout=sys.stderr, stdin=subprocess.PIPE, env=env)
+    except:
+        if os.path.exists(product):
+            os.remove(product)
+        raise
+    else:
+        products.append(product)
+	if args.pdfdest:
+            os.copy(product, args.pdfdest)
+            if args.pdfdest.endswith('/'):
+                dest = os.path.join(pdfdest, os.basename(jn + ".pdf"))
+            else:
+                dest = args.pdfdest
+            print >>sys.stderr, "Copied to", dest
 
-if [ $# -ge 2 ] ; then
-  echo "Finished prodding all files:" "$@" >&2
-fi
+if len(products) > 1:
+    print >>sys.stderr, "Finished prodding:", ', '.join(
+        products)
 
-if [ "$cat_after" ] ; then
-    cat "$od/$jn.txt"
-fi
+if args.text:
+    print open(os.path.join(od, jn + ".txt")).read(),
