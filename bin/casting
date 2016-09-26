@@ -25,6 +25,7 @@ NAME_RE = re.compile(r'\\s\\MYname\s*\{(.+)\}')
 DESC_RE = re.compile(r'\\s\\MYdesc\s*\{(.+)\}')
 SEX_RE = re.compile(r'\\s\\MYsex\s*\{(.+)\}')
 FILE_RE = re.compile(r'\\s\\MYfile\s*\{(.+)\}')
+CHAR_RATING_RE = re.compile(r'% ([a-z ]+): ([1-5])')
 
 if len(sys.argv) <= 1:
     sys.stderr.write("Usage: %s responses.csv > interface.html\n" % __file__)
@@ -32,49 +33,6 @@ if len(sys.argv) <= 1:
 
 GAMETEX_DIR = os.path.relpath(os.path.dirname(os.path.dirname(os.path.abspath(os.path.dirname(__file__)))))
 
-with open(GAMETEX_DIR + '/Lists/char-LIST.tex') as charf:
-    curr_macro = None
-    curr_desc = None
-    curr_sex = None
-    has_file = False
-    for l in charf:
-        if COMMENT_RE.search(l):
-            continue
-        m = PC_RE.search(l)
-        if m:
-            if curr_macro and has_file:
-                CHARS.append((curr_macro, curr_desc, curr_sex))
-            if m.group(1) == r'\cTest':
-                curr_macro = None
-            else:
-                curr_macro = m.group(1)
-            curr_desc = ''
-            has_file = False
-            continue
-        if curr_macro is None:
-            continue
-        
-        m = NAME_RE.search(l)
-        if m:
-            curr_desc += m.group(1)
-            continue
-        
-        m = DESC_RE.search(l)
-        if m:
-            curr_desc += ' (%s)' % m.group(1)
-            continue
-
-        m = FILE_RE.search(l)
-        if m:
-            has_file = True
-            continue
-        
-        m = SEX_RE.search(l)
-        if m:
-            curr_sex = m.group(1)
-    
-    if curr_macro and has_file:
-        CHARS.append((curr_macro, curr_desc, curr_sex))
 
 RATINGS_RE = re.compile(r'^(.*) \[(.*)\]$')
 TIME_SPLIT_RE = re.compile(r'[,;] ?(?=\d)')
@@ -86,6 +44,7 @@ if len(sys.argv) < 2:
     print >>sys.stderr, 'Usage: Gameki/bin/casting responses.csv > out.html'
     sys.exit(1)
 
+ratings_keys = set()
 for l in csv.reader(file(sys.argv[1])):
     if not headings:
         for index in xrange(len(l)):
@@ -94,6 +53,7 @@ for l in csv.reader(file(sys.argv[1])):
             if m:
                 headings.append(m.group(2))
                 supheadings.append(m.group(1))
+                ratings_keys.add(m.group(2))
                 coltypes.append('n')
             else:
                 headings.append(item)
@@ -119,17 +79,76 @@ for l in csv.reader(file(sys.argv[1])):
                     break
             else:
                 times = tbits
-                continue
             for tbit in tbits:
                 if tbit not in times:
                     times.append(tbit)
         for i in list(ambig_indexes):
-            if len(l[i]) > 1:
+            if len(l[i]) != 1:
                 coltypes[i] = 'l'
                 ambig_indexes.remove(i)
 if not times:
     times = ['1']
 totals = [0] * len(times)
+
+with open(GAMETEX_DIR + '/Lists/char-LIST.tex') as charf:
+    curr_macro = None
+    curr_desc = None
+    curr_sex = None
+    has_file = False
+    ratings = {}
+    for l in charf:
+        m = CHAR_RATING_RE.search(l)
+        if m:
+            key = None
+            for rk in ratings_keys:
+                if m.group(1) == rk:
+                    # Trumps any partial matches
+                    key = rk
+                    break
+                elif re.search(r'\b%s\b' % m.group(1), rk):
+                    assert key is None, (m.group(1), key, rk)
+                    key = rk
+            assert key is not None, m.group(1)
+            ratings[key] = int(m.group(2))
+        if COMMENT_RE.search(l):
+            continue
+        m = PC_RE.search(l)
+        if m:
+            if curr_macro and has_file:
+                CHARS.append((curr_macro, curr_desc, curr_sex, ratings))
+            if m.group(1) == r'\cTest':
+                curr_macro = None
+            else:
+                curr_macro = m.group(1)
+            curr_desc = ''
+            curr_sex = None
+            has_file = False
+            ratings = {}
+            continue
+        if curr_macro is None:
+            continue
+        
+        m = NAME_RE.search(l)
+        if m:
+            curr_desc += m.group(1)
+            continue
+        
+        m = DESC_RE.search(l)
+        if m:
+            curr_desc += ' (%s)' % m.group(1)
+            continue
+
+        m = FILE_RE.search(l)
+        if m:
+            has_file = True
+            continue
+        
+        m = SEX_RE.search(l)
+        if m:
+            curr_sex = m.group(1)
+            
+    if curr_macro and has_file:
+        CHARS.append((curr_macro, curr_desc, curr_sex, ratings))
 
 print r'''<html>
 <head>
@@ -291,6 +310,31 @@ function hasClass(elem, cls) {
   return elem.className.match(new RegExp("\\b" + cls + "\\b"));
 }
 
+// keyed by player, char
+var RATING_MODS = {
+  "1,1": 5,
+  "1,2": 1,
+  "1,4": -10,
+  "1,5": -20,
+  "2,1": 3,
+  "2,2": 1,
+  "2,4": -5,
+  "2,5": -10,
+  "3,1": 0,
+  "3,2": 0,
+  "3,4": 0,
+  "3,5": 0,
+  "4,1": -2,
+  "4,2": -1,
+  "4,4": +1,
+  "4,5": +2,
+  "5,1": -5,
+  "5,2": -2,
+  "5,4": +2,
+  "5,5": +3,
+};
+
+var charRatings = {};
 var lastRow;
 function rowClick(row, index) {
   document.getElementById('text').innerHTML = texts[index];
@@ -301,13 +345,49 @@ function rowClick(row, index) {
   lastRow = row;
 
   var allTimes = document.getElementById("casting").getElementsByTagName("tr");
-  // Skip first two rows of headers.
-  for (var i = 2; i < allTimes.length; ++i) {
+  // Skip first three rows of headers.
+  for (var i = 3; i < allTimes.length; ++i) {
     allTimes[i].className = 'impossible';
   }
   var avail = row.getElementsByClassName("avail")[0].innerHTML;
   for (var i = 0; i < avail.length; ++i) {
     document.getElementById('time' + avail[i]).className = 'possible';
+  }
+
+  // Deal with ratings
+  var scores = allTimes[2].getElementsByTagName("td");
+  var macros = allTimes[1].getElementsByTagName("td");
+  var playerRatings = {};
+  var headings = document.getElementById("headings").getElementsByTagName("th");
+  var values = row.getElementsByTagName("td");
+  for (var i = 0; i < headings.length; ++i) {
+    if (headings[i].className == "n") {
+      playerRatings[headings[i].innerText.trim()] = values[i+2].innerText;
+    }
+  }
+
+  for (var i = 0; i < scores.length; ++i) {
+    var score = 0;
+    var macro = macros[i].innerText;
+    
+    for (var k in charRatings[macro]) {
+      if (playerRatings[k]) {
+        score += RATING_MODS[[playerRatings[k], charRatings[macro][k]]];
+      }
+    }
+
+    scores[i].innerHTML = score;
+    if (score < 0) {
+      scores[i].className = 'n1';
+    } else if (score < 2) {
+      scores[i].className = 'n2';
+    } else if (score < 5) {
+      scores[i].className = 'n3';
+    } else if (score < 10) {
+      scores[i].className = 'n4';
+    } else {
+      scores[i].className = 'n5';
+    }
   }
 }
 
@@ -429,7 +509,7 @@ while x < len(supheadings):
         attrbit = ''
     print '<th%s>%s</th>' % (attrbit, cgi.escape(val))
 
-print '</tr><tr>'
+print '</tr><tr id="headings">'
 
 for i in xrange(len(headings)):
     item = headings[i]
@@ -451,7 +531,8 @@ for index in xrange(len(apps)):
         item = a[i]
         if coltypes[i] in ('n',):
             print '<td class="%s n%s">%s</td>' % (coltypes[i], item,
-                                                 cgi.escape(item))
+                                                  cgi.escape(item[0])
+                                                  if len(item) > 0 else '')
         elif coltypes[i] == 't':
             tbits = TIME_SPLIT_RE.split(item)
             for t in tbits:
@@ -481,20 +562,30 @@ def get_sex_class(csex):
 
 print '<div id="text">Select an app to see free-answer questions here.</div>'
 print '<div id="casting"><table>'
-print '<tr id="namerow"><th colspan="2" rowspan="2">Time Slot</th>'
-for cmacro,cname,csex in CHARS:
+print '<tr id="namerow"><th colspan="2" rowspan="3">Time Slot</th>'
+for cmacro,cname,csex,cratings in CHARS:
     print '<td class="%s">%s</td>' % (get_sex_class(csex), cname)
-print '<th rowspan="2">Get</th>'
+print '<th rowspan="3">Get</th>'
 print '</tr>'
 print '<tr id="macros">'
-for cmacro,cname,csex in CHARS:
+for cmacro,cname,csex,cratings in CHARS:
     print '<td class="%s">%s</td>' % (get_sex_class(csex), cmacro)
+print '</tr>'
+print '<tr id="match">'
+for cmacro,cname,csex,cratings in CHARS:
+    print '<td class="%s">?</td>' % (get_sex_class(csex))
+    print '<script>'
+    print 'charRatings["\\%s"] = {' % cmacro
+    for r in cratings:
+        print '  "%s": %s,' % (r, cratings[r])
+    print '};'
+    print '</script>'
 print '</tr>'
 for i in xrange(len(times)):
     print '<tr id="time%s">' % (string.uppercase[i])
     print '<th>%s: %s</th>' % (string.uppercase[i], totals[i])
     print '<th class="timename">%s</th>' % TIME_SUB_RE.sub('', times[i])
-    for cmacro,cname,csex in CHARS:
+    for cmacro,cname,csex,cratings in CHARS:
         print '<td onclick="assign(this)"></td>'
     print '<td class="download"><a href="#" onclick="getRun(\'%s\'); return false">Slot %s</a></td>' % (
         string.uppercase[i], string.uppercase[i])
