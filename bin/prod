@@ -2,6 +2,23 @@
 
 import subprocess, sys, os, glob
 import argparse
+import yaml
+
+from dirs_lib import *
+
+# Not all versions of latexmk support the -lualatex flag directly, so spell it
+# out.
+LATEX_MAP = dict(lualatex="-pdflatex=lualatex %O %S",
+                 xelatex="-xelatex",
+                 pdflatex=None)
+default_latex = 'pdflatex'
+try:
+    config = yaml.safe_load(open(GAMEKI_DIR + 'config.yaml'))
+except IOError:
+    pass
+else:
+    if 'latex' in config:
+        default_latex = config['latex']
 
 parser = argparse.ArgumentParser(epilog=
 """Examples:
@@ -15,9 +32,8 @@ parser.add_argument('target', nargs='+', help="files or option-macros to prod")
 parser.add_argument('--single', '-s', action='store_true', help="use single-siding (don't put a blank page after sheets to make the page count even)")
 parser.add_argument('--color', '-c', action='store_true', help="use color (\PDFPart) mode: single-siding and set background colors")
 parser.add_argument('--run', '-r', help="prod a file using the given run instead of the default")
-parser.add_argument('--lualatex', '-l', action="store_true", help="use lualatex instead of pdflatex")
+parser.add_argument('--latex', help="specify what latex binary to use (default from Gameki/config.yaml: %s)" % default_latex, choices=LATEX_MAP.keys())
 parser.add_argument('--text', '-t', action="store_true", help="use lualatex and cat the text output (from Gameki/lib/text.sty)")
-parser.add_argument('--xelatex', '-x', action="store_true", help="use xelatex instead of pdflatex")
 parser.add_argument('--jobname', '-j', help="pass JOBNAME as the jobname to the latex file")
 parser.add_argument('--outdir', '-o', help="directory for all output files to go to")
 parser.add_argument('--pdfdest', '-p', help="copy pdf to this location on successful production")
@@ -38,21 +54,19 @@ if not os.path.exists("LaTeX"):
 
 dir = os.path.abspath(reldir)
 
-# Not all versions of latexmk support the -lualatex flag directly.
-lualatex = "-pdflatex=lualatex %O %S"
-
 flags = ["-pdf"]
 tex = "prod"
-
 if args.single:
     tex = "single"
 if args.color:
     tex = "color"
 
-if args.lualatex or args.text:
-    flags.append(lualatex)
-if args.xelatex:
-    flags.append("-xelatex")
+if args.text:
+    flags.append(LATEX_MAP['lualatex'])
+else:
+    latex = args.latex or default_latex
+    if LATEX_MAP[latex]:
+        flags.append(LATEX_MAP[latex])
 
 clses = glob.glob(os.path.join(dir, 'LaTeX', '*.cls'))
 assert len(clses) == 1, clses
