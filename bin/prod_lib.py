@@ -21,7 +21,7 @@ def run_cmd(program, args, accept_no_output=False):
         if (accept_no_output
             and ("pdflatex: failed to create output file" in stderr
                  or "Latexmk: Log file says no output from latex" in stderr)
-            and "! \getextracts" not in stderr):
+            and "! " not in stderr):
             # Exited successfully, but no output.
             return False
         else:
