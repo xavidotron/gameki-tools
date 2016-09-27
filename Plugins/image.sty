@@ -1,0 +1,19 @@
+
+\def\imagepage#1{%
+  \clearpage
+  \vspace*{\fill}%
+  % I'm not sure why the .97 is necessary to avoid spilling to the next page,
+  % but it is.
+  \centering\noindent\includegraphics[width=\textwidth,height=.97\textheight,keepaspectratio]{\gamepath/Images/#1}%
+  \vspace*{\fill}%
+  \clearpage
+}
+
+\DeclareGameSubOption{image}{sheet}{
+
+\lhead{}
+\cfoot{}
+
+\SURFACEMAP{Char}{\imagepage{\MYfile}}
+
+}

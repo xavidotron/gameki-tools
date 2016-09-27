@@ -1,0 +1,23 @@
+% To enable Gameki plugins, add the following before
+% \ProcessOptions*\relax
+% in LaTeX/gametex.sty:
+%
+% 
+
+% Add stuff to the \STARTINPUTS..\FINISHINPUTS block.
+\long\def\ADDINPUTS#1\FINISHINPUTS{%
+  \edef\@inputinputs{%
+    \expandafter\unexpanded\expandafter{\@inputinputs}%
+    \unexpanded{#1}%
+  }
+}
+
+\input \gamepath/Gameki/Plugins/abilstats.sty
+\input \gamepath/Gameki/Plugins/badgeitems.sty
+\input \gamepath/Gameki/Plugins/image.sty
+\input \gamepath/Gameki/Plugins/booksheets.sty
+\input \gamepath/Gameki/Plugins/memboxes.sty
+\input \gamepath/Gameki/Plugins/stickeritems.sty
+% Don't put extra space after periods. It's the standard these days, and it
+% avoids the complexity of needing to worry about exceptions like ``Mr.''.
+\frenchspacing

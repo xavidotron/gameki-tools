@@ -1,0 +1,83 @@
+\newif\ifskipownerlabel\skipownerlabelfalse
+
+\DeclareGameSubOption{stickeritems}{badgeitems}{
+
+\newif\ifhasitems
+\let\real@make@badge=\maybe@make@badge
+\def\maybe@make@badge{%
+  \begingroup
+    \hasitemsfalse
+    \SURFACEMAP{Item}{\global\hasitemstrue}
+    \SURFACEMAP{ItemPacket}{}
+    \SURFACEMAP{ItemLabel}{}
+    \MYitems
+    \def\lefttop{}\def\righttop{}\def\leftbottom{}\def\rightbottom{}
+    \ifhasitems\ifskipownerlabel\else\ItemCard{\MYname: Items}{}{}\fi\fi
+  \endgroup
+}
+
+\@elementmapping{ItemPacket}{}
+\@elementmapping{ItemLabel}{}
+
+\itemheight = 2in
+\itemwidth = 4in
+
+\oddsidemargin-.83in
+\evensidemargin-.83in
+\textwidth8.24in
+
+\MarginsXY{.16in}{0in}
+
+\long\def\invisiblefbox#1{%
+  \begingroup
+    \let\fbox=\orig@fbox
+    \fcolorbox{white}{white}{#1}%
+  \endgroup
+}
+
+\let\orig@fbox=\fbox
+\let\fbox=\invisiblefbox
+
+\compactcards
+\lhead{\raisebox{.1in}[0pt][0pt]{\small Page \arabic{page}}}
+
+%\let\OrigItemCard=\ItemCard
+%
+%\def\lastowner{}
+%\newcommand{\OwneryItemCard}[4][]{%
+%  \ifx\lastowner\myowner\else
+%    \begingroup
+%      \def\lefttop{}%
+%      \def\righttop{}%
+%      \def\leftbottom{}%
+%      \def\rightbottom{}%
+%      \OrigItemCard{\myowner: Items}{}{}%
+%    \endgroup
+%    \xdef\lastowner{\myowner}%
+%  \fi
+%  \OrigItemCard[#1]{#2}{#3}{#4}%
+%}
+%
+%\let\ItemCard=\OwneryItemCard
+
+}
+
+\newif\ifskipownersmalllabel\skipownersmalllabelfalse
+
+\DeclareGameSubOption{smallstickeritems}{stickeritems}{
+
+\def\maybe@make@badge{%
+  \begingroup
+    \hasitemsfalse
+    \SURFACEMAP{Item}{}
+    \SURFACEMAP{ItemLabel}{\global\hasitemstrue}
+    \MYitems
+    \def\transfer{}
+    \ifhasitems\ifskipownersmalllabel\else\LabelItem{\MYname: Items}\fi\fi
+  \endgroup
+}
+
+\@elementmapping{Item}{}
+\@elementmapping{ItemLabel}{\LabelItem{\MYname}{\MYnumber}{\MYtext}}
+
+}

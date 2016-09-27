@@ -1,0 +1,40 @@
+
+\def\SmallMemBox{%
+  \SmallMemBoxFormat{\MYname}{\MYtext}}
+\def\BigMemBox{%
+  \BigMemBoxFormat{\MYname}{\MYtext}}
+
+% For a 1 x 2 5/8 in sticker.
+\newcommand\SmallMemBoxFormat[2]{%
+  \MemBox{#1}{#2}{.8in}{2.425in}{.1in}}
+
+% For a 3.33 x 4 in sticker.
+\newcommand\BigMemBoxFormat[2]{%
+  \MemBox{#1}{#2}{3.13in}{3.8in}{.1in}}
+
+% \MemBox{trigger}{text}{height}{width}{fboxsep}
+\newcommand{\MemBox}[5]{
+  \par\noindent\rmfamily #1:\par
+  \vskip.25\baselineskip
+  \fboxsep=#5\relax
+  \noindent\fbox{\begin{minipage}[c][#3]{#4}%
+      \footnotesize
+      #2%
+  \end{minipage}}%
+  \vskip\baselineskip
+}
+
+\DeclareGameSubOption{memboxes}{mems}{
+
+% Use book geometry if booksheets plugin is loaded.
+\csname bookgeometry\endcsname
+
+%% \FoldingMempacket[number]{owner}{trigger}{text}
+\renewcommand{\FoldingMempacket}[4][]{
+  \SmallMemBoxFormat{#3}{#4}%
+}
+\renewcommand{\EnvelopeMempacket}[4][]{
+  \BigMemBoxFormat{#3}{#4}%
+}
+
+}

@@ -1,0 +1,39 @@
+\newcommand\AddToOption[2]{%
+  \expandafter\edef\csname o,#1\endcsname{%
+    \expandafter\expandafter\expandafter\unexpanded\expandafter\expandafter\expandafter{\csname o,#1\endcsname}%
+    \unexpanded{#2}}%
+}
+
+\def\bookgeometry{\usepackage[paperheight=8.5in,paperwidth=5.5in,hmargin=.5in,vmargin=.5in]{geometry}}
+
+% Add a geometry line to the sheet game option.
+\AddToOption{sheet}{
+
+\bookgeometry
+
+\lhead{}
+\rhead{}
+\lfoot{}
+\cfoot{}
+\rfoot{}
+
+}
+
+\DeclareGameSubOption{bigsheet}{sheet}{
+
+\geometry{paperheight=11in,paperwidth=8.5in,hmargin=.7in,vmargin=1in}
+
+\lhead{\em\scriptsize\gamename\ / \gamedate}
+
+\rhead{\begingroup%
+  \em\scriptsize%
+  \setbox0\hbox{%
+      \bfseries\footnotesize\ifx\@transowner\relax\mysubowner\else\myowner\fi}%
+  \ifdim\wd0>0sp\mbox{\box0} / \fi\mytype%
+  \endgroup}
+
+\lfoot{\parbox{2.5in}{\em\scriptsize\mytitle}}
+\cfoot{\em\scriptsize\thepage}
+\rfoot{\em\scriptsize Not Transferable}
+
+}

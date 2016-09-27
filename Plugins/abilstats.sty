@@ -1,0 +1,57 @@
+
+\ADDINPUTS
+
+\PRESETS{Stat}{
+  \FD\MYdisplay{\MYvalue}
+}
+\newinstance{Stat}{\circstat[3]}{
+  \s\MYname{#1}\s\MYabbrev{#2}\s\MYvalue{#3}%
+  \s\MYdisplay{\multi{\MYvalue}{$\bigcirc$ } / \MYvalue}}
+\newcommand{\newcircstat}[4]{%
+  \FD#1{#4}%
+  \append\MYstats{\circstat{#2}{#3}{#1}}%
+  }
+
+\FINISHINPUTS
+
+\DeclareGameSubOption{abilstats}{statcards}{
+
+\SingleSiding
+
+\usepackage[paperheight=8.5in,paperwidth=5.5in,hmargin=.5in,vmargin=.5in]{geometry}
+
+\lhead{}
+\rhead{}
+
+\def\maybecra{&\global\let\maybecr=\maybecrb}
+\def\maybecrb{\\\global\let\maybecr=\maybecra}
+
+\renewcommand{\StatCard}[2]{%
+  \ifstats
+    \begingroup
+      \noindent
+      {\Large\textbf{Stat Card: #1}}\\
+      ~\\
+      \gdef\body{}
+      \MAP{Stat}{\xdef\body{\expandafter\unexpanded\expandafter{\body}
+          \ifx\MYvalue\empty\else\MYname: & \expandafter\unexpanded\expandafter{\ME{\MYdisplay}}\noexpand\maybecr\fi}}%
+      #2
+      \let\maybecr=\maybecra
+      \begin{tabular}{rl@{\hskip5em}|rc}
+        \body
+      \end{tabular}
+    
+      \if\MYabils\empty\else
+      \rm\small
+      \subsection*{Abilities}
+      \SURFACEMAP{Abil}{\item[\MYname:] \MYtext}%
+      \begin{desc}
+        \MYabils
+      \end{desc}
+      \fi
+    \endgroup
+    \clearpage
+  \fi
+}
+
+}

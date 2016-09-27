@@ -1,0 +1,207 @@
+
+\ADDINPUTS
+\PRESETS{Owner}{
+  \FD\MYcolor{}
+}
+\PRESETS{Item}{
+  \FD\MYpicture{}
+}
+\FINISHINPUTS
+
+\def\@color{}
+\def\DeclareItemColor#1{\DeclareOption{#1}{\def\@color{#1}}}
+
+\DeclareGameSubOption{badgeitems}{items}{
+
+\def\start@uc#1#2\end@uc{\uppercase{#1}#2}
+\def\@uc{\expandafter\start@uc\MYcolor\end@uc}
+
+\def\lefttop{\ifx\MYcolor\empty Item Card\else\@uc\ Item\fi}
+
+%\@bycharmappings{%
+%  \ifbadge\ifx\MYcolor\@color\expandafter\NameBadge\badgemap\fi\fi
+%  \BRANCHTYPES{Element}{\RESURFACEMAP{\TYPE}}%
+%  \MYitems
+%}
+\def\@ownermappingsx#1#2#3{%
+  \BRANCHTYPES{Char}{\SURFACEMAP{\TYPE}{%
+    \beginpunt%
+      \gettags%
+      % For some reason, with this ids become UNLISTED automagically.
+      %\long\def\unlist##1{%
+      %  \expandafter\@setowner\expandafter{\myowner\ UNLISTED}##1}%
+      \expandafter\@setowner\expandafter{\@ownerstring}%
+      \BRANCHTYPES{Element}{\RESURFACEMAP{\TYPE}}%
+      \let\@myidchar\relax%
+      #3%
+      \@flatten@field{#1}#2%
+      \BRANCHTYPES{Identity}{\SURFACEMAP{\TYPE}{#3}}%
+      \let\@myidchar\ME%
+      \@flatten@field{Identity}\MYids%
+      \@setowner{}%
+    \endpunt}}%
+  \BRANCHTYPES{Place}{\SURFACEMAP{\TYPE}{%
+    \beginpunt%
+      \expandafter\@setowner\expandafter{\@ownerstring}%
+      \BRANCHTYPES{Element}{\RESURFACEMAP{\TYPE}}%
+      #3%
+      \@flatten@field{#1}#2%
+      \@setowner{}%
+    \endpunt}}%
+  \def\@subownermap##1{%
+    \beginpunt%
+      \expandafter\@setowner\expandafter{\@ownerstring}%
+      ##1%
+      \BRANCHTYPES{Element}{\RESURFACEMAP{\TYPE}}%
+      #3%
+      \@flatten@field{#1}#2%
+      \@setowner{}%
+    \endpunt}%
+  \BRANCHTYPES{SubOwner}{\SURFACEMAP{\TYPE}{\@subownermap{}}}%
+  }
+\@ownermappingsx{Item}{\MYitems}{\maybe@make@badge}
+
+\def\maybe@make@badge{%
+  \ifbadge\ifx\MYcolor\@color\expandafter\NameBadge\badgemap\fi\fi}
+
+\@elementmapping{Item}{%
+  \ifx\MYcolor\@color
+    \@numopt\ItemCard{\MYname}{\MYtext}{\MYmark}%
+    %\ifx\MYpicture\empty\else
+    %  \card{\includegraphics[height=\itemheight,width=\itemwidth,keepaspectratio]{\gamepath/Images/\MYpicture}}
+    %\fi
+  \fi
+}
+
+\@elementmapping{ItemPacket}{%
+  \@numopt\ItemCard{\MYname}{\MYtext}{\MYmark}%
+  \ContentsStrip{\MYname}{\MYcontents}%
+  }
+
+\@elementmapping{ItemFold}{%
+  \FoldingItem{\MYname}{\MYnumber}{\MYtext}{\MYcontents}%
+  }
+
+\@elementmapping{ItemEnvelope}{%
+  \EnvelopeItem{\MYname}{\MYnumber}{\MYtext}{\MYcontents}%
+  }
+
+\@elementmapping{ItemLabel}{\LabelItem{\MYname}{\MYnumber}{\MYtext}}
+
+\def\@compendium{%
+  \EVERY{PC}{\maybe@make@badge}%
+  \EVERY{Item}{}}
+
+\def\badgelefttop{\ifx\MYcolor\empty\else\@uc\fi Name-Badge}
+\def\badgerighttop{Not Transferable}
+
+%%%%%
+%% \NameBadge{field1}{field2}{field3}{field4}
+%% \GMbadge{name}
+%% \Observer
+\newcommand{\NameBadge}[4]{%
+  \begingroup%
+    \doublecard%
+      {\light@badge{%
+        {\LARGE         #1}\vfil%
+        {\bfseries\Huge #2}\vfil%
+        {\LARGE         #3}\vfil%
+        {\bfseries\Huge #4}\vfil}}%
+      {\badge@note}%
+  \endgroup}
+
+%%%%%
+%% Internal macros, increasingly more internal
+\long\def\light@badge#1{%
+  \hbox{\light@side{#1}}%
+  }
+
+\long\def\dark@badge#1{%
+  \hbox{\dark@side{#1}}%
+  }
+
+\def\badge@note{%
+  \vbox to\itemheight{\hsize=\itemwidth%
+    \leftskip=0pt plus1fil%
+    \rightskip=0pt plus1fil%
+    \vfill
+    \fboxsep=5pt%
+    \fbox{\fbox{\parbox{.6\itemwidth}{%
+      \centering%
+      \Large\bfseries\leftbottom\par\rightbottom\par
+      Name Badge\par\vskip5pt
+      \normalsize(turn to other side)
+      }}}%
+    \vfill}%
+  }
+
+\newbox\@badgebox
+\newdimen\@badgedimen
+
+\long\def\light@side#1{%
+  \begingroup%
+    \fboxsep=0pt%
+    \fboxrule=.3pt%
+    \baselineskip=0pt%
+    \lineskip=2pt%
+    \parindent=0pt%
+    \def\baselinestretch{0}%
+    \setbox\@badgebox=\vbox{%
+        \centering%
+        \leftskip=\whitespace plus1fil%
+        \rightskip=\whitespace plus1fil%
+        \hsize=\itemwidth%
+        \vskip\whitespace
+        \badgelefttop \hfill \badgerighttop \vfil
+        {#1}
+        \leftbottom \hfill \rightbottom
+        \vskip\whitespace}%
+    \@badgedimen\ht\@badgebox%
+    \advance\@badgedimen\dp\@badgebox%
+    \ifdim\@badgedimen>\itemheight%
+      \itemheight\@badgedimen%
+      \typeout{! badge oversized}%
+    \fi%
+    \fbox{\vbox to\itemheight{\unvbox\@badgebox}}%
+  \endgroup}
+
+\long\def\dark@side#1{%
+  \begingroup%
+    \fboxsep=0pt%
+    \fboxrule=.3pt%
+    \baselineskip=0pt%
+    \lineskip=1pt%
+    \parindent=0pt%
+    \def\baselinestretch{0}%
+    \setbox\@badgebox=\vbox{%
+        \centering%
+        \leftskip=\whitespace plus1fil%
+        \rightskip=\whitespace plus1fil%
+        \hsize=\itemwidth%
+        \vskip\whitespace
+        \lefttop \hfill \righttop \vfil
+        {#1}
+        \leftbottom \hfill \rightbottom
+        \vskip\whitespace}%
+    \@badgedimen\ht\@badgebox%
+    \advance\@badgedimen\dp\@badgebox%
+    \ifdim\@badgedimen>\itemheight%
+      \itemheight\@badgedimen%
+      \typeout{! badge oversized}%
+    \fi%
+    \fbox{\colorbox{badgeback}{\color{white}%
+      \vbox to\itemheight{\unvbox\@badgebox}}}%
+  \endgroup}
+
+% \compendium for just badges
+\def\badges {%
+  \def\maybebadge{%
+    \ifbadge\ifx\MYcolor\@color\expandafter\NameBadge\badgemap\fi\fi}
+  \SURFACEMAP{Identity}{\maybebadge}%
+  \EVERY{Char}{%
+    \maybebadge
+    \MYids
+  }%
+}
+
+}
