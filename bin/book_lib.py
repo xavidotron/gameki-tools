@@ -24,7 +24,7 @@ def get_book_paths(run=None, use_names=False, pdfdir=None, macros=None):
     except IOError:
         pass
     else:
-        if 'cover' in configL
+        if 'cover' in config:
             cover = config['cover']
         if 'booklet' in config:
             booklet = config['booklet']
@@ -48,7 +48,7 @@ def get_book_paths(run=None, use_names=False, pdfdir=None, macros=None):
                 return get_pdf_path('%s-%s%s' % (p, run_infix, m),
                                     color_sheets=True)
 
-        sheets = [cover, rules]
+        sheets = [get_page_path(cover), rules]
         for p in booklet:
             sheet = get_page_path(p)
             if sheet:
