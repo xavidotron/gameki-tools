@@ -1,24 +1,9 @@
 #!/usr/bin/python
 
-import subprocess, sys, os, glob
+import subprocess, sys, os
 import argparse
-import yaml
 
-from dirs_lib import *
-
-# Not all versions of latexmk support the -lualatex flag directly, so spell it
-# out.
-LATEX_MAP = dict(lualatex="-pdflatex=lualatex %O %S",
-                 xelatex="-xelatex",
-                 pdflatex=None)
-default_latex = 'pdflatex'
-try:
-    config = yaml.safe_load(open(GAMEKI_DIR + 'config.yaml'))
-except IOError:
-    pass
-else:
-    if 'latex' in config:
-        default_latex = config['latex']
+from prod_lib import *
 
 parser = argparse.ArgumentParser(epilog=
 """Examples:
@@ -40,109 +25,29 @@ parser.add_argument('--pdfdest', '-p', help="copy pdf to this location on succes
 
 args = parser.parse_args()
 
-reldir = ""
-updir = ""
-if not os.path.exists("LaTeX"):
-    updir = os.path.basename(os.getcwd())
-    reldir = ".."
-    while not os.path.exists(os.path.join(reldir, "LaTeX")):
-	updir = os.path.join(os.path.basename(os.path.abspath(reldir)), updir)
-	reldir = os.path.join("..", reldir)
-	if os.path.abspath(reldir) == "/":
-	    print >>sys.stderr, "No LaTeX directiory found; are you in a GameTeX directory?"
-	    sys.exit(1)
-
-dir = os.path.abspath(reldir)
-
-flags = ["-pdf"]
-tex = "prod"
-if args.single:
-    tex = "single"
-if args.color:
-    tex = "color"
-
 if args.text:
-    flags.append(LATEX_MAP['lualatex'])
-else:
-    latex = args.latex or default_latex
-    if LATEX_MAP[latex]:
-        flags.append(LATEX_MAP[latex])
-
-clses = glob.glob(os.path.join(dir, 'LaTeX', '*.cls'))
-assert len(clses) == 1, clses
-gameclassname = os.path.basename(clses[0]).split('.', 1)[0]
-env = {
-    "TEXINPUTS": "%s/LaTeX/:%s/Gameki/lib/:" % (dir, dir),
-    "gameclassname": gameclassname,
-    gameclassname: dir,
-    "PATH": os.environ["PATH"],
-    "USER": os.environ["USER"],
-}
-
-filejobs = []
-for t in args.target:
-    if '-' in t and '.' not in t:
-        # If the arg has a dash and no dot, then it's a jobname to pass to
-        # Gameki/LaTeX/prod.tex.
-        filejobs.append((os.path.join(dir, 'Gameki', 'lib', tex + '.tex'), t))
-    else:
-        filejobs.append((t, args.jobname))
-
-outdir = args.outdir
-if not outdir:
-    outdir = "Out"
-    if reldir:
-	outdir = os.path.join(reldir, outdir)
+    assert len(args.target) == 1
+    print get_text(args.target[0], jobname=args.jobname, run=args.run),
+    sys.exit(0)
 
 products = []
-for f,j in filejobs:
-    if args.run:
-        jn = run + ":" + f.split('.', 1)[0]
-	if j:
-	    jn += ":" + j
-	flags.append("-jobname=" + jn)
-        f = os.path.join(dir, "Gameki", "lib", "file.tex")
-	od = os.path.join(outdir, os.path.basename(f.split('.', 1)[0]))
-        os.makedirs(os.path.dirname(os.path.join(od, jn)))
-    elif j:
-	flags.append("-jobname=" + j)
-	jn = j
-        # If we reimplement in python, we could use os.path.relpath()
-	od = os.path.join(outdir, os.path.basename(f.split('.', 1)[0]))
-    else:
-	jn = os.path.basename(f.split('.', 1)[0])
-	od = os.path.join(outdir, updir, os.path.dirname(f))
-    try:
-        os.makedirs(od)
-    except OSError:
-        pass
-    flags = ["-outdir=" + od] + flags
-
-    product = os.path.join(od, jn + ".pdf")
+for t in args.target:
     # NOTE(xavid): setting outdir leads to an unnecessary extra pass when
     #              the .aux file didn't already exist. We could theoretically
     #              try to fix this.
-    try:
-        subprocess.check_call(
-            ["latexmk", "-halt-on-error", "-interaction=nonstopmode"]
-            + flags + [f], stdout=sys.stderr, stdin=subprocess.PIPE, env=env)
-    except:
-        if os.path.exists(product):
-            os.remove(product)
-        raise
-    else:
-        products.append(product)
-	if args.pdfdest:
-            os.copy(product, args.pdfdest)
-            if args.pdfdest.endswith('/'):
-                dest = os.path.join(pdfdest, os.basename(jn + ".pdf"))
-            else:
-                dest = args.pdfdest
-            print >>sys.stderr, "Copied to", dest
+    product = get_pdf_path(t, single_sided=args.single, color_sheets=args.color,
+                           latex=args.latex, outdir=args.outdir,
+                           jobname=args.jobname, run=args.run, verbose=True)
+
+    products.append(product)
+    if args.pdfdest:
+        os.copy(product, args.pdfdest)
+        if args.pdfdest.endswith('/'):
+            dest = os.path.join(pdfdest, os.basename(jn + ".pdf"))
+        else:
+            dest = args.pdfdest
+        print >>sys.stderr, "Copied to", dest
 
 if len(products) > 1:
     print >>sys.stderr, "Finished prodding:", ', '.join(
         products)
-
-if args.text:
-    print open(os.path.join(od, jn + ".txt")).read(),

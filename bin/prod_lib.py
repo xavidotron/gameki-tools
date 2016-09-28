@@ -1,12 +1,14 @@
-import subprocess, sys, os
+import subprocess, sys, os, glob
+import yaml
 
 from dirs_lib import *
 
-def run_cmd(program, args, accept_no_output=False):
+def run_cmd(program, args, accept_no_output=False, env=None, verbose=False):
     cmd = [program] + args
     #print ' '.join("'%s'" % e if ' ' in e else e for e in cmd)
-    process = subprocess.Popen(cmd,
-                               stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    process = subprocess.Popen(cmd, env=env,
+                               stdout=None if verbose else subprocess.PIPE,
+                               stderr=None if verbose else subprocess.PIPE)
     stdout, stderr = process.communicate()
     if process.returncode != 0:
         if (accept_no_output
@@ -16,8 +18,9 @@ def run_cmd(program, args, accept_no_output=False):
             # Exited successfully, but no output.
             return False
         else:
-            sys.stderr.write("Running command: %s\n\n" % ' '.join(cmd))
-            sys.stderr.write(stderr)
+            if stderr is not None:
+                sys.stderr.write("Running command: %s\n\n" % ' '.join(cmd))
+                sys.stderr.write(stderr)
             sys.stderr.write("`%s` exited with status %d.\n" % (
                     ' '.join(cmd), process.returncode))
             sys.exit(1)
@@ -26,11 +29,112 @@ def run_cmd(program, args, accept_no_output=False):
     else:
         return stdout
 
-def prod(target, extra_args=[], **kw):
-    return run_cmd(GAMEKI_DIR + 'bin/prod', extra_args + [target], **kw)
+# Not all versions of latexmk support the -lualatex flag directly, so spell it
+# out.
+LATEX_MAP = dict(lualatex="-pdflatex=lualatex %O %S",
+                 xelatex="-xelatex",
+                 pdflatex=None)
+default_latex = 'pdflatex'
+try:
+    config = yaml.safe_load(open(GAMEKI_DIR + 'config.yaml'))
+except IOError:
+    pass
+else:
+    if 'latex' in config:
+        default_latex = config['latex']
+
+def prod(target, jobname=None, single_sided=False, color_sheets=False,
+         run=None, text=False, latex=None, outdir=None,
+         accept_no_output=False, verbose=False):
+    reldir = ""
+    updir = ""
+    if not os.path.exists("LaTeX"):
+        updir = os.path.basename(os.getcwd())
+        reldir = ".."
+        while not os.path.exists(os.path.join(reldir, "LaTeX")):
+            updir = os.path.join(os.path.basename(os.path.abspath(reldir)),
+                                 updir)
+            reldir = os.path.join("..", reldir)
+            if os.path.abspath(reldir) == "/":
+                print >>sys.stderr, "No LaTeX directiory found; are you in a GameTeX directory?"
+                sys.exit(1)
+    dir = os.path.abspath(reldir)
+    if not outdir:
+        outdir = "Out"
+        if reldir:
+            outdir = os.path.join(reldir, outdir)
+
+    clses = glob.glob(os.path.join(dir, 'LaTeX', '*.cls'))
+    assert len(clses) == 1, clses
+    gameclassname = os.path.basename(clses[0]).split('.', 1)[0]
+    env = {
+        "TEXINPUTS": "%s/LaTeX/:%s/Gameki/lib/:" % (dir, dir),
+        "gameclassname": gameclassname,
+        gameclassname: dir,
+        "PATH": os.environ["PATH"],
+        "USER": os.environ["USER"],
+        }
+
+    tex = "prod"
+    if single_sided:
+        tex = "single"
+    if color_sheets:
+        tex = "color"
+
+    if '-' in target and '.' not in target:
+        # If the arg has a dash and no dot, then it's a jobname to pass to
+        # Gameki/LaTeX/prod.tex.
+        texfile = os.path.join(dir, 'Gameki', 'lib', tex + '.tex')
+        jobname = target
+    else:
+        texfile = target
+
+    flags = ["-halt-on-error", "-interaction=nonstopmode", "-pdf"]
+    if text:
+        flags.append(LATEX_MAP['lualatex'])
+    else:
+        if latex is None:
+            latex = default_latex
+        if LATEX_MAP[latex]:
+            flags.append(LATEX_MAP[latex])
+
+    if run:
+        jn = run + ":" + texfile.split('.', 1)[0]
+	if jobname:
+	    jn += ":" + jobname
+	flags.append("-jobname=" + jn)
+        texfile = os.path.join(dir, "Gameki", "lib", "file.tex")
+	od = os.path.join(outdir, os.path.basename(f.split('.', 1)[0]))
+        os.makedirs(os.path.dirname(os.path.join(od, jn)))
+    elif jobname:
+	flags.append("-jobname=" + jobname)
+	jn = jobname
+        # If we reimplement in python, we could use os.path.relpath()
+	od = os.path.join(outdir, os.path.basename(texfile.split('.', 1)[0]))
+    else:
+	jn = os.path.basename(texfile.split('.', 1)[0])
+	od = os.path.join(outdir, updir, os.path.dirname(texfile))
+
+    try:
+        os.makedirs(od)
+    except OSError:
+        pass
+    flags = ["-outdir=" + od] + flags
+
+    product = os.path.join(od, jn + ".pdf")
+    try:
+        if not run_cmd('latexmk', flags + [texfile],
+                       accept_no_output=accept_no_output, env=env,
+                       verbose=verbose):
+            return None
+    except:
+        if os.path.exists(product):
+            os.remove(product)
+        raise
+    return product
 
 def get_pdf_path(target, jobname=None, single_sided=False, color_sheets=False,
-                 run=None):
+                 run=None, verbose=False, **kw):
     if target.startswith('joined-'):
         m = target[len('joined-'):]
         # TODO(xavid); this should come from config.yaml
@@ -44,43 +148,10 @@ def get_pdf_path(target, jobname=None, single_sided=False, color_sheets=False,
         run_cmd('pdfjoin', ['-o', out_path] + in_paths)
         return out_path
 
-    args = []
-    if jobname:
-        args += ['-j', jobname]
-    if single_sided:
-        args.append('-s')
-    elif color_sheets:
-        args.append('-c')
-    if run is not None:
-        args += ['-r', run]
-
-    if jobname:
-        if run is not None:
-            outfile = TOP_DIR + 'Out/file/%s:%s:%s.pdf' % (
-                run, target[:-len('.tex')], jobname)
-        else:
-            outfile = TOP_DIR + 'Out/%s/%s.pdf' % (
-                os.path.basename(target)[:-len('.tex')], jobname)
-        if '/' in target:
-            target = TOP_DIR + target
-    elif '/' in target:
-        assert target.endswith('.tex')
-        if run is not None:
-            outfile = TOP_DIR + 'Out/file/%s:%s.pdf' % (
-                run, target[:-len('.tex')])
-        else:
-            outfile = TOP_DIR + 'Out/' + target[:-len('.tex')] + '.pdf'
-        target = TOP_DIR + target
-    elif single_sided:
-        outfile = TOP_DIR + 'Out/single/%s.pdf' % target
-    elif color_sheets:
-        outfile = TOP_DIR + 'Out/color/%s.pdf' % target
-    else:
-        outfile = TOP_DIR + 'Out/prod/%s.pdf' % target
-
-    if not prod(target, args, accept_no_output=True):
-        return None
-    return outfile
+    return prod(target, jobname=jobname, single_sided=single_sided,
+                color_sheets=color_sheets, run=run,
+                accept_no_output=not verbose, verbose=verbose,
+                **kw)
 
 def get_pdf(target):
     pdf = get_pdf_path(target)
@@ -89,10 +160,5 @@ def get_pdf(target):
 
 def get_text(tex, jobname=None, run=None):
     assert tex.endswith('.tex'), tex
-    args = ['-t']
-    if jobname:
-        args.append('-j')
-        args.append(jobname)
-    if run is not None:
-        args += ['-r', run]
-    return prod(tex, args)
+    product = prod(tex, text=True, jobname=jobname, run=run)
+    return open(product[:-len('.pdf')] + ".txt").read()
