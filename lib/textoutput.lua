@@ -18,6 +18,7 @@ charmap[0x0E] = "ffi"
 charmap[0x0F] = "ffl"
 charmap[0x10] = "i"
 charmap[0x11] = "j"
+charmap[0xFB00] = "ff"
 if unicode then
   charmap[0x1A] = "æ"
   charmap[0x22] = "”"
@@ -76,7 +77,10 @@ local accent
 
 function gothru(h,prof)
   for t in node.traverse(h) do
-    if debug then texio.write_nl(string.rep("...",prof) .. 'NODE type=' ..  node.type(t.id) .. ' subtype=' .. t.subtype ) end
+    if debug then
+      texio.write_nl(string.rep("...",prof) .. 'NODE type=' ..  node.type(t.id))
+      if t.subtype then texio.write(' subtype=' .. t.subtype) end
+    end
     if t.id == hlist or t.id == vlist then
       --texio.write(' w=' .. t.width .. ' h=' .. t.height .. ' d=' .. t.depth .. ' s=' .. t.shift )
       gothru(t.list,prof+1)
@@ -89,7 +93,7 @@ function gothru(h,prof)
       eat_spaces = false
     end
     if t.id == glyph then
-      if debug then texio.write(' font=' .. t.font .. ' char=' .. utf8char(t.char) .. ' (' .. string.format('0x%X', t.char) .. ')') end
+      if debug then texio.write(' font=' .. t.font .. ' char=' .. utf8char(t.char) .. ' (' .. string.format('0x%X', t.char) .. ')\n') end
       if spaces_pending > 0 then
         for i=1,spaces_pending do
           io.write(" ")
@@ -127,10 +131,11 @@ function gothru(h,prof)
     end
     if t.id == glue then
       if debug then
-        texio.write(' w=' .. t.spec.width .. ' stretch=' .. t.spec.stretch)
+        if t.spec then texio.write(' w=' .. t.spec.width .. ' stretch=' .. t.spec.stretch) end
 	if eat_spaces then texio.write(' eat_spaces') end
       end
-      if (t.subtype == 0 and (t.spec.width > 0 or t.spec.stretch > 0)
+      if ((t.subtype == 0 or t.subtype == 13)
+          and (not t.spec or t.spec.width > 0 or t.spec.stretch > 0)
           and not eat_spaces) then
         spaces_pending = spaces_pending + 1
       end
