@@ -87,7 +87,14 @@ else:
 
 server = None
 if args.send or args.dry_run:
-    config = yaml.safe_load(open(GAMEKI_DIR + 'config.yaml'))
+    try:
+        config = yaml.safe_load(open(GAMEKI_DIR + 'config.yaml'))
+    except IOError:
+        print >>sys.stderr, GAMEKI_DIR + '''config.yaml should contain:
+mail:
+  server: ???
+  username: ???'''
+        sys.exit(1)
     server_host = config['mail']['server']
     username = config['mail']['username']
     server = smtplib.SMTP(server_host, 587)

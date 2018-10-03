@@ -145,7 +145,8 @@ def get_pdf_path(target, jobname=None, single_sided=False, color_sheets=False,
             get_pdf_path('abils-%s' % m),
             ]
         out_path = TOP_DIR + 'Out/prod/%s.pdf' % target
-        run_cmd('pdfjoin', ['-o', out_path] + in_paths)
+        run_cmd('pdfjoin',
+                ['-o', out_path] + [p for p in in_paths if p is not None])
         return out_path
 
     return prod(target, jobname=jobname, single_sided=single_sided,
