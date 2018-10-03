@@ -90,65 +90,73 @@ if not times:
     times = ['1']
 totals = [0] * len(times)
 
-with open(GAMETEX_DIR + '/Lists/char-LIST.tex') as charf:
-    curr_macro = None
-    curr_desc = None
-    curr_sex = None
-    has_file = False
-    ratings = {}
-    for l in charf:
-        m = CHAR_RATING_RE.search(l)
-        if m:
-            key = None
-            for rk in ratings_keys:
-                if m.group(1) == rk:
-                    # Trumps any partial matches
-                    key = rk
-                    break
-                elif re.search(r'\b%s\b' % m.group(1), rk):
-                    assert key is None, (m.group(1), key, rk)
-                    key = rk
-            assert key is not None, m.group(1)
-            ratings[key] = int(m.group(2))
-        if COMMENT_RE.search(l):
-            continue
-        m = PC_RE.search(l)
-        if m:
-            if curr_macro and has_file:
-                CHARS.append((curr_macro, curr_desc, curr_sex, ratings))
-            if m.group(1) == r'\cTest':
-                curr_macro = None
-            else:
-                curr_macro = m.group(1)
-            curr_desc = ''
-            curr_sex = None
-            has_file = False
-            ratings = {}
-            continue
-        if curr_macro is None:
-            continue
-        
-        m = NAME_RE.search(l)
-        if m:
-            curr_desc += m.group(1)
-            continue
-        
-        m = DESC_RE.search(l)
-        if m:
-            curr_desc += ' (%s)' % m.group(1)
-            continue
+if len(sys.argv) >= 3:
+    import yaml
+    with open(sys.argv[2]) as charf:
+        y = yaml.load(charf)
+        for c in y:
+            c = c.encode('utf-8')
+            CHARS.append((c, '', None, {}))
+else:
+    with open(GAMETEX_DIR + '/Lists/char-LIST.tex') as charf:
+        curr_macro = None
+        curr_desc = None
+        curr_sex = None
+        has_file = False
+        ratings = {}
+        for l in charf:
+            m = CHAR_RATING_RE.search(l)
+            if m:
+                key = None
+                for rk in ratings_keys:
+                    if m.group(1) == rk:
+                        # Trumps any partial matches
+                        key = rk
+                        break
+                    elif re.search(r'\b%s\b' % m.group(1), rk):
+                        assert key is None, (m.group(1), key, rk)
+                        key = rk
+                assert key is not None, m.group(1)
+                ratings[key] = int(m.group(2))
+            if COMMENT_RE.search(l):
+                continue
+            m = PC_RE.search(l)
+            if m:
+                if curr_macro and has_file:
+                    CHARS.append((curr_macro, curr_desc, curr_sex, ratings))
+                if m.group(1) == r'\cTest':
+                    curr_macro = None
+                else:
+                    curr_macro = m.group(1)
+                curr_desc = ''
+                curr_sex = None
+                has_file = False
+                ratings = {}
+                continue
+            if curr_macro is None:
+                continue
 
-        m = FILE_RE.search(l)
-        if m:
-            has_file = True
-            continue
-        
-        m = SEX_RE.search(l)
-        if m:
-            curr_sex = m.group(1)
-            
-    if curr_macro and has_file:
-        CHARS.append((curr_macro, curr_desc, curr_sex, ratings))
+            m = NAME_RE.search(l)
+            if m:
+                curr_desc += m.group(1)
+                continue
+
+            m = DESC_RE.search(l)
+            if m:
+                curr_desc += ' (%s)' % m.group(1)
+                continue
+
+            m = FILE_RE.search(l)
+            if m:
+                has_file = True
+                continue
+
+            m = SEX_RE.search(l)
+            if m:
+                curr_sex = m.group(1)
+
+        if curr_macro and has_file:
+            CHARS.append((curr_macro, curr_desc, curr_sex, ratings))
 
 print r'''<html>
 <head>
@@ -343,8 +351,10 @@ function rowClick(row, index) {
   }
   addClass(row, "selected");
   lastRow = row;
-
   var allTimes = document.getElementById("casting").getElementsByTagName("tr");
+'''
+if len(times) > 1:
+    print r'''
   // Skip first three rows of headers.
   for (var i = 3; i < allTimes.length; ++i) {
     allTimes[i].className = 'impossible';
@@ -353,7 +363,8 @@ function rowClick(row, index) {
   for (var i = 0; i < avail.length; ++i) {
     document.getElementById('time' + avail[i]).className = 'possible';
   }
-
+'''
+print r'''
   // Deal with ratings
   var scores = allTimes[2].getElementsByTagName("td");
   var macros = allTimes[1].getElementsByTagName("td");
