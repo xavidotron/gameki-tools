@@ -19,3 +19,17 @@ Command-line tools useful for writing/running LARPs based on [GameTeX](http://we
 * Several tools are powered by LuaTeX, which may have some slight differences
   from pdfTeX/XeTeX. Reported issues include:
   * File names for fonts can't have spaces in them.
+
+### Installation
+
+* Check out the Gameki repository to a Gameki directory next to your LaTeX
+  directory.
+* To use plugins like stickeritems typesetting, add the following before
+  ```\ProcessOptions*\relax```
+   in LaTeX/gametex.sty:
+   ```
+   \input \gamepath/Gameki/lib/plugins.sty
+   ```
+
+   You may want to comment out individual plugins in Gameki/lib/plugins.sty.
+* Run commands as Gameki/bin/prod or whatever.
