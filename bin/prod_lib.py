@@ -104,8 +104,11 @@ def prod(target, jobname=None, single_sided=False, color_sheets=False,
 	    jn += ":" + jobname
 	flags.append("-jobname=" + jn)
         texfile = os.path.join(dir, "Gameki", "lib", "file.tex")
-	od = os.path.join(outdir, os.path.basename(f.split('.', 1)[0]))
-        os.makedirs(os.path.dirname(os.path.join(od, jn)))
+	od = os.path.join(outdir, os.path.basename(texfile.split('.', 1)[0]))
+        try:
+            os.makedirs(os.path.dirname(os.path.join(od, jn)))
+        except OSError:
+            pass
     elif jobname:
 	flags.append("-jobname=" + jobname)
 	jn = jobname
@@ -163,3 +166,54 @@ def get_text(tex, jobname=None, run=None):
     assert tex.endswith('.tex'), tex
     product = prod(tex, text=True, jobname=jobname, run=run)
     return open(product[:-len('.pdf')] + ".txt").read()
+
+def get_sheet_paths(run=None):
+    macros = [
+        unicode(m[1:].strip(), 'utf-8')
+        for m in
+        get_text(GAMEKI_DIR + 'lib/charmacros.tex').strip().split('\n')]
+
+    names = [
+        unicode(m.strip(), 'utf-8')
+        for m in
+        get_text(GAMEKI_DIR + 'lib/charnames.tex',
+                 run=run).strip().split('\n')]
+
+    booklet = ['listchar', 'listblue', 'listgreen']
+    try:
+        config = yaml.safe_load(open(GAMEKI_DIR + 'config.yaml'))
+    except IOError:
+        pass
+    else:
+        if 'booklet' in config:
+            booklet = config['booklet']
+
+    run_infix = ''
+    pdfdir = 'Out/sheets/'
+    if run is not None:
+        run_infix = '%s-' % run
+
+    for i in xrange(len(macros)):
+        m = macros[i]
+
+        def get_page_path(p):
+            if '/' in p:
+                return get_pdf_path(p, m, run=run)
+            else:
+                return get_pdf_path('%s-%s%s' % (p, run_infix, m),
+                                    color_sheets=True)
+
+        sheets = []
+        for p in booklet:
+            sheet = get_page_path(p)
+            if sheet:
+                sheets.append(sheet)
+
+        try:
+            os.makedirs(pdfdir)
+        except OSError:
+            pass
+        name = names[i].replace('/', '-').encode('utf-8')
+        joined = '%s/%s%s.pdf' % (pdfdir, run_infix, name)
+        run_cmd('pdfjoin', ['-o', joined] + sheets)
+        yield joined

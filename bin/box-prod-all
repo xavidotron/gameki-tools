@@ -1,0 +1,36 @@
+#!/usr/bin/python
+
+import os, sys, subprocess, zipfile, shutil
+from prod_lib import *
+
+if len(sys.argv) > 1:
+    run = sys.argv[1]
+else:
+    run = '0'
+
+dirname = 'static'
+try:
+    shutil.rmtree(dirname)
+except OSError:
+    pass
+os.makedirs(dirname + '/Characters')
+
+for f in ('instructions', 'rules-scenario', 'whos-who', 'butterflies'):
+    p = get_pdf_path('Handouts/%s.tex' % f, run=run)
+    shutil.copyfile(p, '%s/%s.pdf' % (dirname, f))
+
+for f in ('badge-PRINT-air', 'badge-PRINT-earth', 'badge-PRINT-fire',
+          'badge-PRINT-foreigner', 'badge-PRINT-water',
+          'badge-PRINT', 'stickeritem-PRINT',
+          'listchar-PRINT'):
+    p = get_pdf_path('Production/%s.tex' % f, run=run)
+    shutil.copyfile(p, '%s/%s.pdf' % (dirname, f))
+
+#for t, o in (('badges', "badges-%s-production" % run),
+#             ('cards', "carditems-%s-production" % run)):
+#    p = get_pdf_path(o)
+#    shutil.copyfile(p, '%s/%s.pdf' % (dirname, t))
+
+for outpath in get_sheet_paths(run=run):
+    _, shortname = os.path.basename(outpath).split('-', 1)
+    shutil.copyfile(outpath, '%s/Characters/%s' % (dirname, shortname))
