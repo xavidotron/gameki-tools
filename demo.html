@@ -1,0 +1,623 @@
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+td, th {
+  border: thin solid black;
+  text-align: center;
+}
+.selected td, .selected th {
+  border-top-width: 3px;
+  border-bottom-width: 3px;
+}
+*[onclick] {
+  cursor: pointer;
+}
+#apps th, #namerow td, .timename, .email {
+  font-size: 8pt;
+}
+#apps th[rowspan] {
+  font-size: 12pt;
+}
+th.n {
+  height: 150px;
+}
+th.n > div {
+  width: 32px;
+}
+th.n > div > div {
+  width: 150px;
+  transform: rotate(90deg);
+  margin-left: -59.0px;
+  padding: 0 5px;
+}
+.n {
+  width: 32px;
+}
+tr.selected {
+  background-color: LightCyan;
+}
+tr.assigned .s {
+  background-color: LightGreen;
+}
+tr.possible th {
+  background-color: LightBlue;
+}
+tr.impossible {
+  background-color: Grey;
+}
+td.filled {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+td.invalid {
+  color: red;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+td.male {
+  background-color: LightBlue;
+}
+td.female {
+  background-color: LightPink;
+}
+td.neuter {
+  background-color: LightYellow;
+}
+td.any {
+  background-color: #B9F;
+}
+
+.n5 {
+  background-color: #99FF99;
+}
+.n4 {
+  background-color: #DDFFDD;
+}
+.n2 {
+  background-color: #FFDDDD;
+}
+.n1 {
+  background-color: #FF9999;
+}
+
+#apps {
+  height: 100%;
+  width: 75%;
+  overflow: auto;
+  position: absolute;
+  padding: 5px;
+  top: 0;
+  left: 0;
+}
+#text {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 25%;
+  height: 100%;
+  overflow: auto;
+  padding: 5px;
+}
+dl {
+  margin: 0;
+}
+#casting {
+  padding: 5px;
+  overflow: auto;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: white;
+}
+* {
+  box-sizing: border-box;
+}
+
+dt {
+  font-weight: bold;
+}
+</style>
+<script>
+function init() {
+  var bheight = document.getElementById('casting').offsetHeight;
+  document.getElementById('apps').style.borderBottom = (bheight) + 'px solid';
+  document.getElementById('text').style.borderBottom = (bheight) + 'px solid';
+}
+
+function addClass(elem, cls) {
+  if (elem.className) {
+    elem.className += ' ' + cls;
+  } else {
+    elem.className = cls;
+  }
+}
+function removeClass(elem, cls) {
+  if (elem.className == cls) {
+    elem.className = '';
+  } else {
+    elem.className
+        = elem.className.replace(new RegExp(" " + cls + "\\b", "g"), "")
+          .replace(new RegExp("\\b" + cls + " ", "g"), "");
+  }
+}
+function hasClass(elem, cls) {
+  return elem.className.match(new RegExp("\\b" + cls + "\\b"));
+}
+
+// keyed by player, char
+var RATING_MODS = {
+  "1,1": 5,
+  "1,2": 1,
+  "1,4": -10,
+  "1,5": -20,
+  "2,1": 3,
+  "2,2": 1,
+  "2,4": -5,
+  "2,5": -10,
+  "3,1": 0,
+  "3,2": 0,
+  "3,4": 0,
+  "3,5": 0,
+  "4,1": -2,
+  "4,2": -1,
+  "4,4": +1,
+  "4,5": +2,
+  "5,1": -5,
+  "5,2": -2,
+  "5,4": +2,
+  "5,5": +3,
+};
+
+var charRatings = {};
+var lastRow;
+function rowClick(row, index) {
+  document.getElementById('text').innerHTML = texts[index];
+  if (lastRow) {
+    removeClass(lastRow, "selected");
+  }
+  addClass(row, "selected");
+  lastRow = row;
+  var allTimes = document.getElementById("casting").getElementsByTagName("tr");
+
+
+  // Deal with ratings
+  var scores = allTimes[2].getElementsByTagName("td");
+  var macros = allTimes[1].getElementsByTagName("td");
+  var playerRatings = {};
+  var headings = document.getElementById("headings").getElementsByTagName("th");
+  var values = row.getElementsByTagName("td");
+  for (var i = 0; i < headings.length; ++i) {
+    if (headings[i].className == "n") {
+      playerRatings[headings[i].innerText.trim()] = values[i+2].innerText;
+    }
+  }
+
+  for (var i = 0; i < scores.length; ++i) {
+    var score = 0;
+    var macro = macros[i].innerText;
+    
+    for (var k in charRatings[macro]) {
+      if (playerRatings[k]) {
+        score += RATING_MODS[[playerRatings[k], charRatings[macro][k]]];
+      }
+    }
+
+    scores[i].innerHTML = score;
+    if (score < 0) {
+      scores[i].className = 'n1';
+    } else if (score < 2) {
+      scores[i].className = 'n2';
+    } else if (score < 5) {
+      scores[i].className = 'n3';
+    } else if (score < 10) {
+      scores[i].className = 'n4';
+    } else {
+      scores[i].className = 'n5';
+    }
+  }
+}
+
+var assignments = {};
+var assigned_rows = {};
+function assign(cell) {
+  if (!lastRow) {
+    return;
+  }
+
+  if (cell.innerHTML) {
+    removeClass(assigned_rows[cell.innerHTML], "assigned");
+    delete assigned_rows[cell.innerHTML];
+    delete assignments[cell.innerHTML];
+  }
+
+  if (!hasClass(lastRow, "assigned")) {
+    addClass(lastRow, "assigned");
+  }
+  var name = lastRow.getElementsByClassName('s')[0].textContent;
+  var email = lastRow.getElementsByClassName('s')[1].textContent;
+  if (assignments[name]) {
+    assignments[name].innerHTML = "";
+    assignments[name].className = "";
+  }
+  assignments[name] = cell;
+  assigned_rows[name] = lastRow;
+  var gender;
+  var genderNode = document.getElementById('macros').children[
+      [].indexOf.call(cell.parentElement.children, cell) - 2];
+  var gender_possibilities;
+  if (genderNode.className == 'any') {
+    gender_possibilities = ['female', 'male'];
+  } else {
+    gender_possibilities = [genderNode.className];
+  }
+  if (cell.className == "") {
+    gender = gender_possibilities[0];
+  } else {
+    gender = cell.className.split(' ')[1];
+    if (cell.innerHTML == name) {
+      var i = gender_possibilities.indexOf(gender);
+      if (i + 1 >= gender_possibilities.length) {
+        gender = gender_possibilities[0];
+      } else {
+        gender = gender_possibilities[i + 1];
+      }
+    }
+  }
+  cell.innerHTML = name;
+  if (cell.parentElement.className == "impossible") {
+    cell.className = "invalid " + gender;
+  } else {
+    cell.className = "filled " + gender;
+  }
+  cell.dataset.email = email;
+}
+
+function getRun(run) {
+  var data = '%% Name this file Lists/runN-LIST.tex or similar, and set\n'
+           + '%% \\gamerun to N in your .cls file, where N is a number.\n\n';
+  var row = document.getElementById('time' + run);
+  var cell = row.firstElementChild;  // Slot letter
+  cell = cell.nextElementSibling;  // Slot description
+  cell = cell.nextElementSibling;  // First character
+  var macros = document.getElementById('macros');
+  var macro = macros.firstElementChild;
+  while (cell.className != "download") {
+    var state = cell.className.split(' ')[0];
+    var gender = cell.className.split(' ')[1];
+    if (state == "filled" || state == "invalid") {
+      data += '\\updatemacro{' + macro.innerHTML + '}{\n  \\rs\\MYplayer{' + cell.innerHTML
+            + '}\n  \\rs\\MYemail{' + cell.dataset.email + '}\n';
+      if (gender != macro.className) {
+        data += '  \\rs\\MYsex{\\' + gender + '}\n';
+      }
+      data += '}'
+      if (state == "invalid") {
+        data += '  % Time conflict!';
+      }
+      data += '\n';
+    } else {
+      data += '%% No one cast for ' + macro.innerHTML + '!\n';
+    }
+    cell = cell.nextElementSibling;
+    macro = macro.nextElementSibling;
+  }
+  console.log(data);
+  var link = document.createElement("a");
+  link.download = 'runN-LIST.tex';
+  link.href = 'data:,' + encodeURIComponent(data);
+  link.click();
+  document.getElementById('text').innerHTML = '<pre>' + data + '</pre>';
+}
+
+var texts = [];
+</script>
+</head>
+<body onload="init()">
+<div id="apps">
+<table>
+<tr>
+<th rowspan="2">Name</th>
+<th rowspan="2">Email</th>
+<th colspan="12">How much would you like to play a... (1 = not at all, 5 = a lot)</th>
+</tr><tr id="headings">
+<th class="n"><div><div>Leader</div></div></th>
+<th class="n"><div><div>Follower</div></div></th>
+<th class="n"><div><div>Impostor</div></div></th>
+<th class="n"><div><div>Trickster</div></div></th>
+<th class="n"><div><div>Noble</div></div></th>
+<th class="n"><div><div>Soldier</div></div></th>
+<th class="n"><div><div>Merchant</div></div></th>
+<th class="n"><div><div>Peasant</div></div></th>
+<th class="n"><div><div>Priest</div></div></th>
+<th class="n"><div><div>Person in way over their head</div></div></th>
+<th class="n"><div><div>Traitor</div></div></th>
+<th class="n"><div><div>Star-crossed lover</div></div></th>
+</tr>
+<tr onclick="rowClick(this, 0)">
+<td class="s name">Player 1</td>
+<td class="s email">email</td>
+<td class="n n2">2</td>
+<td class="n n3">3</td>
+<td class="n n4">4</td>
+<td class="n n4">4</td>
+<td class="n n3">3</td>
+<td class="n n3">3</td>
+<td class="n n4">4</td>
+<td class="n n4">4</td>
+<td class="n n3">3</td>
+<td class="n n4">4</td>
+<td class="n n4">4</td>
+<td class="n n1">1</td>
+</tr><script>
+texts[0] = "<dl><dt>Timestamp</dt><dd>2019/01/13 5:48:29 PM EST</dd></dl>";
+</script>
+<tr onclick="rowClick(this, 1)">
+<td class="s name">Player 2</td>
+<td class="s email">email</td>
+<td class="n n2">2</td>
+<td class="n n2">2</td>
+<td class="n n2">2</td>
+<td class="n n2">2</td>
+<td class="n n3">3</td>
+<td class="n n2">2</td>
+<td class="n n2">2</td>
+<td class="n n2">2</td>
+<td class="n n4">4</td>
+<td class="n n2">2</td>
+<td class="n n2">2</td>
+<td class="n n4">4</td>
+</tr><script>
+  texts[1] = "<dl><dt>Timestamp</dt><dd>2019/01/13 6:02:15 PM EST</dd></dl>";
+</script>
+<tr onclick="rowClick(this, 2)">
+<td class="s name">Player 3</td>
+<td class="s email">email</td>
+<td class="n n3">3</td>
+<td class="n n4">4</td>
+<td class="n n5">5</td>
+<td class="n n5">5</td>
+<td class="n n5">5</td>
+<td class="n n5">5</td>
+<td class="n n5">5</td>
+<td class="n n5">5</td>
+<td class="n n5">5</td>
+<td class="n n5">5</td>
+<td class="n n5">5</td>
+<td class="n n1">1</td>
+</tr><script>
+  texts[2] = "<dl><dt>Timestamp</dt><dd>2019/01/13 6:32:22 PM EST</dd></dl>";
+</script>
+<tr onclick="rowClick(this, 3)">
+<td class="s name">Player 4</td>
+<td class="s email">email</td>
+<td class="n n3">3</td>
+<td class="n n4">4</td>
+<td class="n n3">3</td>
+<td class="n n5">5</td>
+<td class="n n3">3</td>
+<td class="n n3">3</td>
+<td class="n n2">2</td>
+<td class="n n2">2</td>
+<td class="n n5">5</td>
+<td class="n n5">5</td>
+<td class="n n1">1</td>
+<td class="n n1">1</td>
+</tr><script>
+  texts[3] = "<dl><dt>Timestamp</dt><dd>2019/01/13 7:20:00 PM EST</dd></dl>";
+</script>
+<tr onclick="rowClick(this, 4)">
+<td class="s name">Player 5</td>
+<td class="s email">email</td>
+<td class="n n4">4</td>
+<td class="n n4">4</td>
+<td class="n n3">3</td>
+<td class="n n3">3</td>
+<td class="n n4">4</td>
+<td class="n n1">1</td>
+<td class="n n4">4</td>
+<td class="n n3">3</td>
+<td class="n n4">4</td>
+<td class="n n3">3</td>
+<td class="n n3">3</td>
+<td class="n n3">3</td>
+</tr><script>
+  texts[4] = "<dl><dt>Timestamp</dt><dd>2019/01/13 8:39:00 PM EST</dd></dl>";
+</script>
+<tr onclick="rowClick(this, 5)">
+<td class="s name">Player 6</td>
+<td class="s email">email</td>
+<td class="n n4">4</td>
+<td class="n n3">3</td>
+<td class="n n5">5</td>
+<td class="n n4">4</td>
+<td class="n n4">4</td>
+<td class="n n3">3</td>
+<td class="n n2">2</td>
+<td class="n n4">4</td>
+<td class="n n2">2</td>
+<td class="n n5">5</td>
+<td class="n n4">4</td>
+<td class="n n1">1</td>
+</tr><script>
+  texts[5] = "<dl><dt>Timestamp</dt><dd>2019/01/14 2:05:47 AM EST</dd></dl>";
+</script>
+<tr onclick="rowClick(this, 6)">
+<td class="s name">Player 7</td>
+<td class="s email">email</td>
+<td class="n n3">3</td>
+<td class="n n2">2</td>
+<td class="n n4">4</td>
+<td class="n n5">5</td>
+<td class="n n3">3</td>
+<td class="n n2">2</td>
+<td class="n n3">3</td>
+<td class="n n2">2</td>
+<td class="n n3">3</td>
+<td class="n n4">4</td>
+<td class="n n4">4</td>
+<td class="n n4">4</td>
+</tr><script>
+  texts[6] = "<dl><dt>Timestamp</dt><dd>2019/01/14 4:09:33 PM EST</dd></dl>";
+</script>
+<tr onclick="rowClick(this, 7)">
+<td class="s name">Player 8</td>
+<td class="s email">email</td>
+<td class="n n3">3</td>
+<td class="n n3">3</td>
+<td class="n n4">4</td>
+<td class="n n4">4</td>
+<td class="n n3">3</td>
+<td class="n n4">4</td>
+<td class="n n3">3</td>
+<td class="n n4">4</td>
+<td class="n n2">2</td>
+<td class="n n5">5</td>
+<td class="n n3">3</td>
+<td class="n n1">1</td>
+</tr><script>
+  texts[7] = "<dl><dt>Timestamp</dt><dd>2019/01/14 8:44:06 PM EST</dd></dl>";
+</script>
+<tr onclick="rowClick(this, 8)">
+<td class="s name">Player 9</td>
+<td class="s email">email</td>
+<td class="n n3">3</td>
+<td class="n n4">4</td>
+<td class="n n5">5</td>
+<td class="n n5">5</td>
+<td class="n n5">5</td>
+<td class="n n5">5</td>
+<td class="n n4">4</td>
+<td class="n n5">5</td>
+<td class="n n5">5</td>
+<td class="n n5">5</td>
+<td class="n n4">4</td>
+<td class="n n5">5</td>
+</tr><script>
+  texts[8] = "<dl><dt>Timestamp</dt><dd>2019/01/21 10:50:43 AM EST</dd></dl>";
+</script>
+</table>
+</div>
+<div id="text">Select an app to see free-answer questions here.</div>
+<div id="casting"><table>
+<tr id="namerow"><th colspan="2" rowspan="3">Time Slot</th>
+<td class="any">Clod Lessor (a weathered Earth elder)</td>
+<td class="any">Kinito Ironsword (a dashing Fire general)</td>
+<td class="any">Mim Kinril (a shrewed-eyed Water merchant)</td>
+<td class="any">Essap Durr (a nondescript Earth servant)</td>
+<td class="any">Cleric \pre Alder (a finely-robed Water cleric)</td>
+<td class="any">Ter Fiero (a staunch Fire soldier)</td>
+<td class="any">Quan Northwind (an attractive young Air noble)</td>
+<td class="any">Rute Oakbranch (a plain-looking Earth farmer)</td>
+<td class="any">Their Majesty, \pre Ceranest (a gloriously-garbed Air monarch)</td>
+<td class="any">Cilac Anguma (a richly-dressed Air noble)</td>
+<td class="any">Risdan Gully (a tastefully-dressed Water merchant)</td>
+<td class="any">Nalen Incen (a tough-looking Fire lieutenant)</td>
+<th rowspan="3">Get</th>
+</tr>
+<tr id="macros">
+<td class="any">\cSpy</td>
+<td class="any">\cMulan</td>
+<td class="any">\cGuildmaster</td>
+<td class="any">\cServant</td>
+<td class="any">\cFakePriest</td>
+<td class="any">\cRealPriest</td>
+<td class="any">\cHotPerson</td>
+<td class="any">\cPatriot</td>
+<td class="any">\cRoyalty</td>
+<td class="any">\cBastard</td>
+<td class="any">\cTrickster</td>
+<td class="any">\cLieutenant</td>
+</tr>
+<tr id="match">
+<td class="any">?</td>
+<script>
+charRatings["\\cSpy"] = {
+};
+</script>
+<td class="any">?</td>
+<script>
+charRatings["\\cMulan"] = {
+};
+</script>
+<td class="any">?</td>
+<script>
+charRatings["\\cGuildmaster"] = {
+};
+</script>
+<td class="any">?</td>
+<script>
+charRatings["\\cServant"] = {
+};
+</script>
+<td class="any">?</td>
+<script>
+charRatings["\\cFakePriest"] = {
+};
+</script>
+<td class="any">?</td>
+<script>
+charRatings["\\cRealPriest"] = {
+};
+</script>
+<td class="any">?</td>
+<script>
+charRatings["\\cHotPerson"] = {
+};
+</script>
+<td class="any">?</td>
+<script>
+charRatings["\\cPatriot"] = {
+};
+</script>
+<td class="any">?</td>
+<script>
+charRatings["\\cRoyalty"] = {
+};
+</script>
+<td class="any">?</td>
+<script>
+charRatings["\\cBastard"] = {
+};
+</script>
+<td class="any">?</td>
+<script>
+charRatings["\\cTrickster"] = {
+};
+</script>
+<td class="any">?</td>
+<script>
+charRatings["\\cLieutenant"] = {
+};
+</script>
+</tr>
+<tr id="timeA">
+<th>A: 0</th>
+<th class="timename">1</th>
+<td onclick="assign(this)"></td>
+<td onclick="assign(this)"></td>
+<td onclick="assign(this)"></td>
+<td onclick="assign(this)"></td>
+<td onclick="assign(this)"></td>
+<td onclick="assign(this)"></td>
+<td onclick="assign(this)"></td>
+<td onclick="assign(this)"></td>
+<td onclick="assign(this)"></td>
+<td onclick="assign(this)"></td>
+<td onclick="assign(this)"></td>
+<td onclick="assign(this)"></td>
+<td class="download"><a href="#" onclick="getRun('A'); return false">Slot A</a></td>
+</tr>
+</table></div>
+</body>
+</html>
