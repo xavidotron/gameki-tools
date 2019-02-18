@@ -1,0 +1,42 @@
+#!/usr/bin/python
+
+import os, sys, subprocess, zipfile, glob
+from prod_lib import *
+from book_lib import *
+
+if len(sys.argv) > 2:
+    run = sys.argv[2]
+else:
+    run = '0'
+
+if len(sys.argv) <= 1 or not sys.argv[1].endswith('.zip'):
+    sys.stderr.write("Usage: %s out.zip [run]\n" % __file__)
+    sys.exit(1)
+game, _ = sys.argv[1].rsplit('.', 1)
+
+with zipfile.ZipFile(sys.argv[1], 'w') as zipout:
+    for f in glob.glob('Handouts/*.tex'):
+        p = get_pdf_path(f, run=run)
+        shortname = os.path.basename(p)
+        sys.stderr.write("Writing %s\n" % shortname)
+        zipout.write(p, '%s/%s' % (game, shortname))
+
+    for f in glob.glob('Production/*.tex'):
+        p = get_pdf_path(f, run=run)
+        shortname = os.path.basename(p)
+        sys.stderr.write("Writing %s\n" % shortname)
+        zipout.write(p, '%s/%s' % (game, shortname))
+
+    #for t, o in (('badges', "badges-%s-production" % run),
+    #             ('cards', "carditems-%s-production" % run)):
+    #    p = get_pdf_path(o)
+    #    zipout.write(p, '%s/%s.pdf' % (game, t))
+
+    #for outpath in get_book_paths(run=run, use_names=True):
+    #    _, shortname = os.path.basename(outpath).split('-', 1)
+    #    zipout.write(outpath, '%s/Characters/%s' % (game, shortname))
+
+    for outpath in get_sheet_paths(run=run):
+        _, shortname = os.path.basename(outpath).split('-', 1)
+        sys.stderr.write("Writing Characters/%s\n" % shortname)
+        zipout.write(outpath, '%s/Characters/%s' % (game, shortname))
