@@ -1,15 +1,19 @@
-\documentclass[sheet]{celeste}
-
-\pagestyle{empty}
+\documentclass[sheet]{gameki}
 
 \begin{document}
 
+\pagestyle{empty}
+
 \begin{center}
+~
+\vfill
+{\Huge\gamename}
+\vfill
 \includegraphics[height=6.5in,width=\textwidth,keepaspectratio]{\gamepath/Images/Cover}
 \vfill
-{\Huge\oldcountry\csname\jobname\endcsname{\full}}
+{\Huge\csname covernameformat\endcsname\csname\jobname\endcsname{\full}}
 \vfill
-{\huge\csname\jobname\endcsname{\ifx\MYplayer\empty Player Name\else\MYplayer\fi}}
+{\huge\csname\jobname\endcsname{\MYplayer}}
 %\vfill
 \end{center}
 
