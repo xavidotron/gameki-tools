@@ -3,8 +3,14 @@
     \expandafter\expandafter\expandafter\unexpanded\expandafter\expandafter\expandafter{\csname o,#1\endcsname}%
     \unexpanded{#2}}%
 }
+\newcommand\PrependToOption[2]{%
+  \expandafter\edef\csname o,#1\endcsname{%
+    \unexpanded{#2}%
+    \expandafter\expandafter\expandafter\unexpanded\expandafter\expandafter\expandafter{\csname o,#1\endcsname}%
+  }%
+}
 
-\def\bookgeometry{\usepackage[paperheight=8.5in,paperwidth=5.5in,hmargin=.5in,vmargin=.5in]{geometry}}
+\def\bookgeometry{\usepackage[paperheight=8.5in,paperwidth=5.5in,hmargin=.25in,vmargin=.25in,includefoot]{geometry}\fancyhfoffset[E,O]{0pt}}
 
 % Add a geometry line to the sheet game option.
 \AddToOption{sheet}{
