@@ -11,6 +11,15 @@ Command-line tools useful for writing/running LARPs based on [GameTeX](http://we
 * `prod`: Convenience script to prod sheets and such with GameTeX. Uses [latexmk](https://www.ctan.org/pkg/latexmk/) to avoid unnecessary rebuilds.
 * `book`: Typeset a packet as a foldable booklet.
 
+### Booklet Production
+
+* Enable plugins by adding {{{\input \gamepath/Gameki/lib/plugins.sty}}}
+  before {{{%% Finishing up the setup for the class.}}} and
+  put {{{\def\booksheets{}}}} in your LaTeX/*.cls file. 
+* Put a cover image as Images/Cover.jpg or Images/Cover.png.
+* To customize the font/formatting for the character on the cover, define
+  \covernameformat{} in your LaTeX/*.cls file.
+
 ### Known Issues
 
 * Text output depends on accurate conversion between TeX characters/tokens and
