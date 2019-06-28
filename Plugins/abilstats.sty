@@ -37,9 +37,11 @@
           \ifx\MYvalue\empty\else\MYname: & \expandafter\unexpanded\expandafter{\ME{\MYdisplay}}\noexpand\maybecr\fi}}%
       #2
       \let\maybecr=\maybecra
+      \ifx\body\empty\else
       \begin{tabular}{rl@{\hskip5em}|rc}
         \body
       \end{tabular}
+      \fi
     
       \if\MYabils\empty\else
       \rm\small
