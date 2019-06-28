@@ -13,12 +13,18 @@
   }
 }
 
+\ifdefined\booksheets
+\input \gamepath/Gameki/Plugins/booksheets.sty
+\fi
+
 \input \gamepath/Gameki/Plugins/abilstats.sty
 \input \gamepath/Gameki/Plugins/badgeitems.sty
 \input \gamepath/Gameki/Plugins/image.sty
-%\input \gamepath/Gameki/Plugins/booksheets.sty
 \input \gamepath/Gameki/Plugins/memboxes.sty
 \input \gamepath/Gameki/Plugins/stickeritems.sty
 % Don't put extra space after periods. It's the standard these days, and it
 % avoids the complexity of needing to worry about exceptions like ``Mr.''.
 \frenchspacing
+% GameTeX by default sets this to 1.2 for sheets other than the rules for some
+% reason.
+\AddToOption{sheet}{\setstretch{1}}
