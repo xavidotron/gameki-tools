@@ -23,20 +23,20 @@ def run_cmd(program, args, accept_no_output=False, env=None, verbose=False):
             if stderr is not None:
                 sys.stderr.write("Running command: %s\n\n" % ' '.join(cmd))
                 sys.stderr.write(stderr)
-            for el in stderr.split('\n'):
-                m = LOG_PATH_RE.search(el)
-                if m:
-                    sys.stderr.write('\n')
-                    with open(m.group(1)) as logf:
-                        printing = False
-                        for l in logf:
-                            if l.startswith('!'):
-                                printing = True
-                            elif l.startswith('Here is how much'):
-                                printing = False
-                            if printing:
-                                sys.stderr.write(l)
-                    sys.stderr.write('\n')
+                for el in stderr.split('\n'):
+                    m = LOG_PATH_RE.search(el)
+                    if m:
+                        sys.stderr.write('\n')
+                        with open(m.group(1)) as logf:
+                            printing = False
+                            for l in logf:
+                                if l.startswith('!'):
+                                    printing = True
+                                elif l.startswith('Here is how much'):
+                                    printing = False
+                                if printing:
+                                    sys.stderr.write(l)
+                        sys.stderr.write('\n')
             sys.stderr.write("`%s` exited with status %d.\n" % (
                     ' '.join(cmd), process.returncode))
             sys.exit(1)
