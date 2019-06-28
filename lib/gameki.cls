@@ -13,7 +13,7 @@
 % (\GAMERUN must be set early (before gametex.sty) to have an effect.)
 
 % Defaults.
-\def\gameoption{sheet}
+\ifdefined\gameoption\else\def\gameoption{sheet}\fi
 \def\parsedmacros{\production}
 
 % Helpers

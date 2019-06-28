@@ -1,0 +1,235 @@
+\def\gameoption{char}
+\documentclass{gameki}
+
+\usepackage{intcalc}
+\usepackage{multido}
+\usepackage{environ}
+
+\begin{document}
+
+\getextractenvs{document}{\gamepath/Gameki/Templates/cover.tex}
+
+\clearpage
+
+\setcounter{tocdepth}{1}
+\tableofcontents
+
+\clearpage
+
+\pagestyle{plain}
+\setcounter{page}{1}
+
+\def\nameprefix{}
+\makeatletter
+\let\realtitle@display=\title@display
+\long\def\title@display#1{%
+  \realtitle@display{\nameprefix#1}}
+\def\name#1{%
+  \setcounter{section}{0}%
+  \SURFACEMAP{Char}{\full}
+  \sheettitle{#1}%
+}
+
+\let\realaddcontentsline=\addcontentsline
+\def\addcontentsline#1#2#3{}
+
+\realaddcontentsline{toc}{section}{Scenario}%
+\getextractenvs{document}{\gamepath/Handouts/scenario.tex}
+\clearpage
+
+\realaddcontentsline{toc}{section}{Rules}%
+\getextractenvs{document}{\gamepath/Handouts/rules.tex}
+\clearpage
+
+% Suppress end-of-charsheet lists
+\def\nameprefix{Character Sheet: }
+\realaddcontentsline{toc}{section}{Character Sheet}%
+\csname\jobname\endcsname{\MYtext}
+
+\clearpage
+
+\SURFACEMAP{Blue}{\realaddcontentsline{toc}{section}{Group: \MYname}\MYtext\clearpage}
+\SURFACEMAP{Green}{\realaddcontentsline{toc}{section}{Mechanic: \MYname}\MYtext\clearpage}
+\SURFACEMAP{GreenNotebook}{}
+
+\def\nameprefix{Group: }
+\csname\jobname\endcsname{\MYblues}
+
+\def\nameprefix{Mechanic: }
+\csname\jobname\endcsname{\MYgreens}
+
+
+\SURFACEMAP{GreenNotebook}{\realaddcontentsline{toc}{section}{Research: \MYname}\MYtext\clearpage}
+\SURFACEMAP{Green}{}
+
+\newif\ifnl
+\def\colornl{%
+  \ifnl%
+    \global\nlfalse\\
+  \else
+    \global\nltrue&
+  \fi
+}
+\setlength\tabcolsep{0pt}
+
+\def\nameprefix{Research: }
+\newcounter{nbbox}
+\long\def\startnotebook#1#2\endnotebook{%
+  \name{#1}%
+  \nlfalse
+  \gdef\tmp{}%
+  \setcounter{nbbox}{1}%
+#2
+\noindent\begin{tabular}{cc}
+\tmp
+\end{tabular}
+\clearpage
+}
+
+\NewEnviron{page}[1]{%
+  \expandafter\xdef\csname nbref#1\endcsname{\arabic{nbbox}}%
+  \xdef\tmp{\expandafter\unexpanded\expandafter{\tmp}\noexpand\SmallMemBoxFormat{Box \arabic{nbbox}}{\expandafter\unexpanded\expandafter{\BODY}}\noexpand\colornl}%
+  \addtocounter{nbbox}{1}%
+}
+\NewEnviron{medpage}[1]{%
+  \expandafter\xdef\csname nbref#1\endcsname{\arabic{nbbox}}%
+  \xdef\tmp{\expandafter\unexpanded\expandafter{\tmp}\noexpand\end{tabular}\noexpand\\\noexpand\MedMemBoxFormat{Box \arabic{nbbox}}{\expandafter\unexpanded\expandafter{\BODY}}\noexpand\\\noexpand\begin{tabular}{cc}}%
+  \addtocounter{nbbox}{1}%
+}
+\def\nbref#1{\csname nbref#1\endcsname}
+\csname\jobname\endcsname{\MYgreens}
+
+\multido{}{\intcalcSub{3}{\intcalcMod{\intcalcSub{\thepage}{1}}{4}}}{%
+  ~
+  \vfill
+  \begin{center}
+  (This page intentionally left blank.)
+  \vfill
+  (Character reference at end of booklet.)
+  \end{center}
+  \vfill
+  ~
+  \clearpage
+  }
+
+\clearpage
+
+\realaddcontentsline{toc}{section}{Traits and Inventory}%
+
+\begingroup
+    \section*{Traits and Inventory: \csname\jobname\endcsname{\MYname}}
+      \gdef\body{}
+      \MAP{Stat}{\xdef\body{\expandafter\unexpanded\expandafter{\body}
+          \ifx\MYvalue\empty\else\MYname: & \expandafter\unexpanded\expandafter{\ME{\MYdisplay}}\noexpand\maybecr\fi}}%
+      \csname\jobname\endcsname{\MYstats}
+      \let\maybecr=\maybecra
+      \ifx\body\empty\else
+      ~\\
+      \begin{tabular}{rl@{\hskip5em}|rc}
+        \body
+      \end{tabular}
+      \fi
+
+      \SURFACEMAP{Abil}{}
+      \SURFACEMAP{Trait}{\xdef\tmp{\expandafter\unexpanded\expandafter{\tmp}\noexpand\item[\expandafter\unexpanded\expandafter{\MYname}:] \expandafter\unexpanded\expandafter{\MYtext}}}
+      \csname\jobname\endcsname{
+        \gettags
+        \gdef\tmp{}
+        \MYabils
+        \ifx\tmp\empty\else
+        \rm\small
+        \begin{desc}
+          \tmp
+        \end{desc}
+        \fi
+      }
+
+      \SURFACEMAP{Item}{\item \MYname}
+      \csname\jobname\endcsname{
+        \begin{tlist}[1]{Starting Items}
+          \MYitems
+        \end{tlist}
+      }
+
+      \SURFACEMAP{Abil}{\item \MYname}
+      \SURFACEMAP{Trait}{}
+      \csname\jobname\endcsname{
+        \begin{tlist}[1]{Ability Cards}
+          \MYabils
+        \end{tlist}
+      }
+
+      \SURFACEMAP{Identity}{\item \ifx\MYname\empty\MYdesc\else\MYname\ (\MYdesc)\fi}
+      \csname\jobname\endcsname{
+        \begin{itemz}[Name Badges]
+          \ifbadge\item \MYname\ (\MYdesc)\fi
+          \MYids
+        \end{itemz}
+      }
+      \endgroup
+
+\def\addtotmp#1\endaddtotmp{\expandafter\gdef\expandafter\tmp\expandafter{\tmp#1}}
+
+\def\tmp{}
+\csname\jobname\endcsname{\procextractenvs{contacts}{\chars/\MYfile}{\addtotmp}{\endaddtotmp}{}{}}%
+\ifx\tmp\empty\else
+\begin{tlist}[1]{Contacts}
+  \tmp
+\end{tlist}
+\fi
+
+\SURFACEMAP{Blue}{%
+\item \textbf{\MYname}
+  \def\tmp{}%
+  \procextractenvs{members}{\blues/\MYfile}{\addtotmp}{\endaddtotmp}{}{}%
+  \ifx\tmp\empty\else
+  \begin{itemz}%
+    \tmp
+  \end{itemz}%
+  \fi
+}
+
+\begin{tlist}[1]{Groups}
+  \csname\jobname\endcsname{\MYblues}
+\end{tlist}
+
+\clearpage
+
+      \gdef\tmp{}
+      \nlfalse
+      \SURFACEMAP{MemFold}{\xdef\tmp{\expandafter\unexpanded\expandafter{\tmp}\noexpand\SmallMemBoxFormat{\expandafter\unexpanded\expandafter{\MYname}}{\expandafter\unexpanded\expandafter{\MYtext}}\noexpand\colornl}}
+      \SURFACEMAP{MemEnvelope}{}
+      \setlength{\columnsep}{0pt}
+      \csname\jobname\endcsname{
+        \gettags
+        \MYmems
+      \noindent\begin{tabular}{cc}
+        \tmp
+      \end{tabular}
+      }
+
+      \SURFACEMAP{MemFold}{}
+      \SURFACEMAP{MemEnvelope}{\MedMemBoxFormat{\MYname}{\MYtext}\par}
+      \csname\jobname\endcsname{
+        \gettags
+        \MYmems
+      }
+
+      \csname\jobname\endcsname{
+        \ifx\MYmems\empty
+        ~\vfill
+        \begin{center}
+        (This page intentionally left blank.)
+        \end{center}
+        \vfill~
+        \fi
+      }
+
+    \clearpage
+
+%\getextractenvs{document}{\gamepath/Gameki/Templates/backcover.tex}
+\def\nameprefix{}
+\realaddcontentsline{toc}{section}{Game Time and Space}%
+\getextractenvs{document}{\gamepath/Handouts/space.tex}
+    
+\end{document}

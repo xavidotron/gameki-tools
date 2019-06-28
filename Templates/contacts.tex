@@ -1,0 +1,34 @@
+\documentclass[sheet]{gameki}
+
+\pagestyle{empty}
+
+\begin{document}
+
+\section*{Who You Know}
+
+\def\addtotmp#1\endaddtotmp{\expandafter\gdef\expandafter\tmp\expandafter{\tmp#1}}
+
+\def\tmp{}
+\csname\jobname\endcsname{\procextractenvs{contacts}{\chars/\MYfile}{\addtotmp}{\endaddtotmp}{}{}}%
+\ifx\tmp\empty\else
+\begin{tlist}[1]{Contacts}
+  \tmp
+\end{tlist}
+\fi
+
+\SURFACEMAP{Blue}{%
+\item \textbf{\MYname}
+  \def\tmp{}%
+  \procextractenvs{members}{\blues/\MYfile}{\addtotmp}{\endaddtotmp}{}{}%
+  \ifx\tmp\empty\else
+  \begin{itemz}%
+    \tmp
+  \end{itemz}%
+  \fi
+}
+
+\begin{tlist}[1]{Groups}
+  \csname\jobname\endcsname{\MYblues}
+\end{tlist}
+
+\end{document}
