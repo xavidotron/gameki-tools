@@ -34,17 +34,21 @@ def get_book_paths(run=None, use_names=False, pdfdir=None, macros=None):
                 return get_pdf_path('%s-%s%s' % (p, run_infix, m),
                                     color_sheets=True)
 
-        pages = get_page_path(packet)
+        if '/' in m:
+            pages = get_pdf_path(m, run=run)
+            name = m.rsplit('/', 1)[-1].split('.', 1)[0]
+        else:
+            pages = get_page_path(packet)
+            if use_names:
+                name = names[i].replace('/', '-').encode('utf-8')
+            else:
+                name = m
         yield pages
 
         try:
             os.makedirs(pdfdir)
         except OSError:
             pass
-        if use_names:
-            name = names[i].replace('/', '-').encode('utf-8')
-        else:
-            name = m[1:]
         book = '%s%s%s-booklet.pdf' % (pdfdir, run_infix, name)
         run_cmd('pdfbook', ['--short-edge', '--paper', 'letter',
                             '-o', book, pages])
