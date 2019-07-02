@@ -2,6 +2,11 @@
 
 \DeclareGameSubOption{stickeritems}{badgeitems}{
 
+\def\@ownerstring{}
+
+\SingleSiding
+\SingleCards
+
 \newif\ifhasitems
 \let\real@make@badge=\maybe@make@badge
 \def\maybe@make@badge{%
