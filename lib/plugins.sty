@@ -13,6 +13,18 @@
   }
 }
 
+\newcommand\AddToOption[2]{%
+  \expandafter\edef\csname o,#1\endcsname{%
+    \expandafter\expandafter\expandafter\unexpanded\expandafter\expandafter\expandafter{\csname o,#1\endcsname}%
+    \unexpanded{#2}}%
+}
+\newcommand\PrependToOption[2]{%
+  \expandafter\edef\csname o,#1\endcsname{%
+    \unexpanded{#2}%
+    \expandafter\expandafter\expandafter\unexpanded\expandafter\expandafter\expandafter{\csname o,#1\endcsname}%
+  }%
+}
+
 \ifdefined\booksheets
 \input \gamepath/Gameki/Plugins/booksheets.sty
 \fi
