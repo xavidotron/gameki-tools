@@ -2,14 +2,15 @@
 
 \DeclareGameSubOption{stickeritems}{badgeitems}{
 
-\def\@ownerstring{}
-
 \SingleSiding
 \SingleCards
 
 \newif\ifhasitems
 \let\real@make@badge=\maybe@make@badge
-\def\maybe@make@badge{%
+\def\maybe@make@badge{\typeout{\MYname}%
+  \ifbadge
+    \ifx\MYcolor\@color\expandafter\NameBadge\badgemap\fi
+  \else
   \begingroup
     \hasitemsfalse
     \SURFACEMAP{Item}{\global\hasitemstrue}
@@ -19,6 +20,7 @@
     \def\lefttop{}\def\righttop{}\def\leftbottom{}\def\rightbottom{}
     \ifhasitems\ifskipownerlabel\else\ItemCard{\MYname: Items}{}{}\fi\fi
   \endgroup
+  \fi
 }
 
 \@elementmapping{ItemPacket}{}

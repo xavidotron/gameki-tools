@@ -13,6 +13,7 @@
 
 \DeclareGameSubOption{badgeitems}{items}{
 
+\def\@ownerstring{}
 \def\start@uc#1#2\end@uc{\uppercase{#1}#2}
 \def\@uc{\expandafter\start@uc\MYcolor\end@uc}
 
@@ -32,12 +33,12 @@
       %  \expandafter\@setowner\expandafter{\myowner\ UNLISTED}##1}%
       \expandafter\@setowner\expandafter{\@ownerstring}%
       \BRANCHTYPES{Element}{\RESURFACEMAP{\TYPE}}%
-      \let\@myidchar\relax%
       #3%
-      \@flatten@field{#1}#2%
       \BRANCHTYPES{Identity}{\SURFACEMAP{\TYPE}{#3}}%
       \let\@myidchar\ME%
       \@flatten@field{Identity}\MYids%
+      \let\@myidchar\relax%
+      \@flatten@field{#1}#2%
       \@setowner{}%
     \endpunt}}%
   \BRANCHTYPES{Place}{\SURFACEMAP{\TYPE}{%
@@ -92,8 +93,8 @@
   \EVERY{PC}{\maybe@make@badge}%
   \EVERY{Item}{}}
 
-\def\badgelefttop{\ifx\MYcolor\empty\else\@uc\fi Name-Badge}
-\def\badgerighttop{Not Transferable}
+\def\badgelefttop{\ifx\MYcolor\empty\else\@uc\fi Name Badge}
+\def\badgerighttop{~}
 
 %%%%%
 %% \NameBadge{field1}{field2}{field3}{field4}
