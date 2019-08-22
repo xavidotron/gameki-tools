@@ -99,7 +99,15 @@
 \def\nbref#1{\csname nbref#1\endcsname}
 \csname\jobname\endcsname{\MYgreens}
 
-\multido{}{\intcalcSub{3}{\intcalcMod{\intcalcSub{\thepage}{1}}{4}}}{%
+\csname\jobname\endcsname{
+  \gettags
+  \ifx\MYmems\empty
+    \gdef\iter{\intcalcSub{3}{\intcalcMod{\intcalcSub{\thepage}{2}}{4}}}%
+  \else
+    \gdef\iter{\intcalcSub{3}{\intcalcMod{\intcalcSub{\thepage}{1}}{4}}}%
+\fi}
+
+\multido{}{\iter}{%
   ~
   \vfill
   \begin{center}
@@ -113,6 +121,36 @@
   }
 
 \clearpage
+
+      \gdef\tmp{}
+      \nlfalse
+      \SURFACEMAP{MemFold}{\xdef\tmp{\expandafter\unexpanded\expandafter{\tmp}\noexpand\SmallMemBoxFormat{\expandafter\unexpanded\expandafter{\MYname}}{\expandafter\unexpanded\expandafter{\MYtext}}\noexpand\colornl}}
+      \SURFACEMAP{MemEnvelope}{}
+      \setlength{\columnsep}{0pt}
+      \csname\jobname\endcsname{
+        \gettags
+
+        \ifx\MYmems\empty\else
+        \realaddcontentsline{toc}{section}{Sticker Boxes}%
+        \section*{Sticker Boxes}
+        \fi
+
+        \MYmems
+      \noindent\begin{tabular}{cc}
+        \tmp
+      \end{tabular}
+      }
+
+      \SURFACEMAP{MemFold}{}
+      \SURFACEMAP{MemEnvelope}{\MedMemBoxFormat{\MYname}{\MYtext}\par}
+      \csname\jobname\endcsname{
+        \gettags
+        \MYmems
+
+        \ifx\MYmems\empty\else
+        \clearpage
+        \fi
+      }
 
 \realaddcontentsline{toc}{section}{Traits and Inventory}%
 
@@ -193,37 +231,15 @@
   \csname\jobname\endcsname{\MYblues}
 \end{tlist}
 
-\clearpage
-
-      \gdef\tmp{}
-      \nlfalse
-      \SURFACEMAP{MemFold}{\xdef\tmp{\expandafter\unexpanded\expandafter{\tmp}\noexpand\SmallMemBoxFormat{\expandafter\unexpanded\expandafter{\MYname}}{\expandafter\unexpanded\expandafter{\MYtext}}\noexpand\colornl}}
-      \SURFACEMAP{MemEnvelope}{}
-      \setlength{\columnsep}{0pt}
-      \csname\jobname\endcsname{
-        \gettags
-        \MYmems
-      \noindent\begin{tabular}{cc}
-        \tmp
-      \end{tabular}
-      }
-
-      \SURFACEMAP{MemFold}{}
-      \SURFACEMAP{MemEnvelope}{\MedMemBoxFormat{\MYname}{\MYtext}\par}
-      \csname\jobname\endcsname{
-        \gettags
-        \MYmems
-      }
-
-      \csname\jobname\endcsname{
-        \ifx\MYmems\empty
-        ~\vfill
-        \begin{center}
-        (This page intentionally left blank.)
-        \end{center}
-        \vfill~
-        \fi
-      }
+      %\csname\jobname\endcsname{
+      %  \ifx\MYmems\empty
+      %  ~\vfill
+      %  \begin{center}
+      %  (This page intentionally left blank.)
+      %  \end{center}
+      %  \vfill~
+      %  \fi
+      %}
 
     \clearpage
 
