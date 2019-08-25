@@ -19,6 +19,8 @@
 \newcommand\BigMemBoxFormat[2]{%
   \MemBox{#1}{#2}{3.13in}{3.8in}{.1in}{4in}}
 
+\def\memboxafter{\par~}
+
 % \MemBox{trigger}{text}{height}{width}{fboxsep}
 \newcommand{\MemBox}[6]{
   \noindent
@@ -34,7 +36,7 @@
       \footnotesize
       #2%
   \end{minipage}}%
-  \par~
+  \memboxafter
   \end{minipage}
 }
 
