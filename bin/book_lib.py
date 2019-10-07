@@ -17,6 +17,7 @@ def get_book_paths(run=None, use_names=False, pdfdir=None, macros=None):
                      run=run).strip().split('\n')]
 
     packet = 'Gameki/Templates/packet.tex'
+    epacket = 'Gameki/Templates/epacket.tex'
 
     run_infix = ''
     if not pdfdir:
@@ -34,16 +35,20 @@ def get_book_paths(run=None, use_names=False, pdfdir=None, macros=None):
                 return get_pdf_path('%s-%s%s' % (p, run_infix, m),
                                     color_sheets=True)
 
+        epages = None
         if '/' in m:
             pages = get_pdf_path(m, run=run)
             name = m.rsplit('/', 1)[-1].split('.', 1)[0]
         else:
             pages = get_page_path(packet)
+            epages = get_page_path(epacket)
             if use_names:
                 name = names[i].replace('/', '-').encode('utf-8')
             else:
                 name = m
         yield pages
+        if epages:
+            yield epages
 
         try:
             os.makedirs(pdfdir)

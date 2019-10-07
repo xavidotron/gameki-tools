@@ -73,6 +73,36 @@
 
 \DeclareGameSubOption{smallstickeritems}{stickeritems}{
 
+\itemheight = 1in
+\itemwidth = 2.5in
+
+\oddsidemargin-.7in
+\evensidemargin-.7in
+\textwidth7.85in
+
+\MarginsXY{.25in}{.25in}
+
+\renewcommand{\LabelItem}[3]{%
+  \begingroup%
+    \fboxsep=-\fboxrule%
+    \baselineskip=0pt%
+    \lineskip=0pt%
+    \parindent=0pt%
+    \def\baselinstretch{0}%
+    \card%
+      {\fbox{\vbox to\itemheight{\hsize=\itemwidth%
+        \leftskip.5\whitespace%
+        \rightskip.5\whitespace%
+        \vskip.5\whitespace%
+        {\tiny\mbox{\gamenameabbrev}/\mbox{\gamedateabbrev}\hfill\transfer}%
+        \vskip.5\whitespace%
+        \temp@dimen\hsize%
+        \advance\temp@dimen-\whitespace%
+        \parbox{\temp@dimen}{%
+          \raggedright\footnotesize{\bfseries#1 \ #2}\\#3}%
+        \vskip.5\whitespace}}}%
+  \endgroup}
+
 \def\maybe@make@badge{%
   \begingroup
     \hasitemsfalse

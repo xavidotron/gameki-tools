@@ -16,6 +16,7 @@ ambig_indexes = set()
 
 # Magic
 SPECIAL_NAMES = ('Name', 'Email')
+SPECIAL_MAP = {'Name': 'Name', 'Email': 'Email', 'Username': 'Email'}
 TIME_HEADING_RE = re.compile(r'When|Time\b')
 CHARS = []
 
@@ -63,9 +64,9 @@ for l in csv.reader(file(sys.argv[1])):
                         "Interpreting '%s' as availability." % item)
                     coltypes.append('t')
                     time_index = index
-                elif item in SPECIAL_NAMES:
+                elif item in SPECIAL_MAP:
                     coltypes.append('s')
-                    special_col_index_map[item] = index
+                    special_col_index_map[SPECIAL_MAP[item]] = index
                 else:
                     ambig_indexes.add(index)
                     coltypes.append('n')

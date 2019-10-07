@@ -121,6 +121,9 @@ for m in macros:
             l = lines.pop(0)
             if not l.strip():
                 break
+            # Could be an uncast part without an email.
+            if l == 'To:':
+                l += ' xavid@xavid.us'
             assert ': ' in l, l
             key, val = l.split(': ', 1)
             if key == 'Attach':

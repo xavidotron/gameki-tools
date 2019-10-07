@@ -167,6 +167,9 @@ def get_pdf_path(target, jobname=None, single_sided=False, color_sheets=False,
         run_cmd('pdfjoin',
                 ['-o', out_path] + [p for p in in_paths if p is not None])
         return out_path
+    elif target.startswith('epacket-'):
+        jobname = target[len('epacket-'):]
+        target = 'Gameki/templates/epacket.tex'
 
     return prod(target, jobname=jobname, single_sided=single_sided,
                 color_sheets=color_sheets, run=run,

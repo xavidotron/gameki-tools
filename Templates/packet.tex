@@ -44,23 +44,23 @@
 % Suppress end-of-charsheet lists
 \def\nameprefix{Character Sheet: }
 \realaddcontentsline{toc}{section}{Character Sheet}%
-\csname\jobname\endcsname{\MYtext}
+\SURFACEMAP{Char}{\MYtext}
+\parsedmacros
 
 \clearpage
 
-\SURFACEMAP{Blue}{\realaddcontentsline{toc}{section}{Group: \MYname}\MYtext\clearpage}
-\SURFACEMAP{Green}{\realaddcontentsline{toc}{section}{Mechanic: \MYname}\MYtext\clearpage}
-\SURFACEMAP{GreenNotebook}{}
-
 \def\nameprefix{Group: }
-\csname\jobname\endcsname{\MYblues}
+\SURFACEMAP{Char}{
+  \SURFACEMAP{Blue}{\realaddcontentsline{toc}{section}{Group: \MYname}\MYtext\clearpage}
+  \MYblues}
+\parsedmacros
 
 \def\nameprefix{Mechanic: }
-\csname\jobname\endcsname{\MYgreens}
-
-
-\SURFACEMAP{GreenNotebook}{\realaddcontentsline{toc}{section}{Research: \MYname}\MYtext\clearpage}
-\SURFACEMAP{Green}{}
+\SURFACEMAP{Char}{
+  \SURFACEMAP{Green}{\realaddcontentsline{toc}{section}{Mechanic: \MYname}\MYtext\clearpage}
+  \SURFACEMAP{GreenNotebook}{}
+  \MYgreens}
+\parsedmacros
 
 \newif\ifnl
 \def\colornl{%
@@ -97,16 +97,22 @@
   \addtocounter{nbbox}{1}%
 }
 \def\nbref#1{\csname nbref#1\endcsname}
-\csname\jobname\endcsname{\MYgreens}
+\SURFACEMAP{Char}{
+  \SURFACEMAP{GreenNotebook}{\realaddcontentsline{toc}{section}{Research: \MYname}\MYtext\clearpage}
+  \SURFACEMAP{Green}{}
+  \MYgreens}
+\parsedmacros
 
-\csname\jobname\endcsname{
+\SURFACEMAP{Char}{
   \gettags
   \ifx\MYmems\empty
     \gdef\iter{\intcalcSub{3}{\intcalcMod{\intcalcSub{\thepage}{2}}{4}}}%
   \else
     \gdef\iter{\intcalcSub{3}{\intcalcMod{\intcalcSub{\thepage}{1}}{4}}}%
 \fi}
+\parsedmacros
 
+\ifdefined\skipblanks\else
 \multido{}{\iter}{%
   ~
   \vfill
@@ -119,15 +125,16 @@
   ~
   \clearpage
   }
+\fi
 
 \clearpage
 
       \gdef\tmp{}
       \nlfalse
-      \SURFACEMAP{MemFold}{\xdef\tmp{\expandafter\unexpanded\expandafter{\tmp}\noexpand\SmallMemBoxFormat{\expandafter\unexpanded\expandafter{\MYname}}{\expandafter\unexpanded\expandafter{\MYtext}}\noexpand\colornl}}
-      \SURFACEMAP{MemEnvelope}{}
       \setlength{\columnsep}{0pt}
-      \csname\jobname\endcsname{
+      \SURFACEMAP{Char}{
+        \SURFACEMAP{MemFold}{\xdef\tmp{\expandafter\unexpanded\expandafter{\tmp}\noexpand\SmallMemBoxFormat{\expandafter\unexpanded\expandafter{\MYname}}{\expandafter\unexpanded\expandafter{\MYtext}}\noexpand\colornl}}
+        \SURFACEMAP{MemEnvelope}{}
         \gettags
 
         \ifx\MYmems\empty\else
@@ -140,10 +147,11 @@
         \tmp
       \end{tabular}
       }
+      \parsedmacros
 
-      \SURFACEMAP{MemFold}{}
-      \SURFACEMAP{MemEnvelope}{\MedMemBoxFormat{\MYname}{\MYtext}\par}
-      \csname\jobname\endcsname{
+      \SURFACEMAP{Char}{
+        \SURFACEMAP{MemFold}{}
+        \SURFACEMAP{MemEnvelope}{\MedMemBoxFormat{\MYname}{\MYtext}\par}
         \gettags
         \MYmems
 
@@ -151,15 +159,19 @@
         \clearpage
         \fi
       }
+      \parsedmacros
 
 \realaddcontentsline{toc}{section}{Traits and Inventory}%
 
 \begingroup
-    \section*{Traits and Inventory: \csname\jobname\endcsname{\MYname}}
+    \SURFACEMAP{Char}{\MYname}
+    \section*{Traits and Inventory: \parsedmacros}
       \gdef\body{}
-      \MAP{Stat}{\xdef\body{\expandafter\unexpanded\expandafter{\body}
+      \SURFACEMAP{Char}{
+          \MAP{Stat}{\xdef\body{\expandafter\unexpanded\expandafter{\body}
           \ifx\MYvalue\empty\else\MYname: & \expandafter\unexpanded\expandafter{\ME{\MYdisplay}}\noexpand\maybecr\fi}}%
-      \csname\jobname\endcsname{\MYstats}
+          \MYstats}
+      \parsedmacros
       \let\maybecr=\maybecra
       \ifx\body\empty\else
       ~\\
@@ -168,9 +180,9 @@
       \end{tabular}
       \fi
 
-      \SURFACEMAP{Abil}{}
-      \SURFACEMAP{Trait}{\xdef\tmp{\expandafter\unexpanded\expandafter{\tmp}\noexpand\item[\expandafter\unexpanded\expandafter{\MYname}:] \expandafter\unexpanded\expandafter{\MYtext}}}
-      \csname\jobname\endcsname{
+      \SURFACEMAP{Char}{
+        \SURFACEMAP{Abil}{}
+        \SURFACEMAP{Trait}{\xdef\tmp{\expandafter\unexpanded\expandafter{\tmp}\noexpand\item[\expandafter\unexpanded\expandafter{\MYname}:] \expandafter\unexpanded\expandafter{\MYtext}}}
         \gettags
         \gdef\tmp{}
         \MYabils
@@ -181,54 +193,60 @@
         \end{desc}
         \fi
       }
+      \parsedmacros
 
-      \SURFACEMAP{Item}{\item \MYname}
-      \csname\jobname\endcsname{
+      \SURFACEMAP{Char}{
+        \SURFACEMAP{Item}{\item \MYname}
         \begin{tlist}[1]{Starting Items}
           \MYitems
         \end{tlist}
       }
+      \parsedmacros
 
-      \SURFACEMAP{Abil}{\item \MYname}
-      \SURFACEMAP{Trait}{}
-      \csname\jobname\endcsname{
+      \SURFACEMAP{Char}{
+        \SURFACEMAP{Abil}{\item \MYname}
+        \SURFACEMAP{Trait}{}
         \begin{tlist}[1]{Ability Cards}
           \MYabils
         \end{tlist}
       }
+      \parsedmacros
 
-      \SURFACEMAP{Identity}{\item \ifx\MYname\empty\MYdesc\else\MYname\ (\MYdesc)\fi}
-      \csname\jobname\endcsname{
+      \SURFACEMAP{Char}{
+        \SURFACEMAP{Identity}{\item \ifx\MYname\empty\MYdesc\else\MYname\ (\MYdesc)\fi}
         \begin{itemz}[Name Badges]
           \ifbadge\item \MYname\ (\MYdesc)\fi
           \MYids
         \end{itemz}
       }
+      \parsedmacros
       \endgroup
 
 \def\addtotmp#1\endaddtotmp{\expandafter\gdef\expandafter\tmp\expandafter{\tmp#1}}
 
 \def\tmp{}
-\csname\jobname\endcsname{\procextractenvs{contacts}{\chars/\MYfile}{\addtotmp}{\endaddtotmp}{}{}}%
+\SURFACEMAP{Char}{\procextractenvs{contacts}{\chars/\MYfile}{\addtotmp}{\endaddtotmp}{}{}}%
+\parsedmacros
 \ifx\tmp\empty\else
 \begin{tlist}[1]{Contacts}
   \tmp
 \end{tlist}
 \fi
 
-\SURFACEMAP{Blue}{%
-\item \textbf{\MYname}
-  \def\tmp{}%
-  \procextractenvs{members}{\blues/\MYfile}{\addtotmp}{\endaddtotmp}{}{}%
-  \ifx\tmp\empty\else
-  \begin{itemz}%
-    \tmp
-  \end{itemz}%
-  \fi
-}
-
 \begin{tlist}[1]{Groups}
-  \csname\jobname\endcsname{\MYblues}
+  \SURFACEMAP{Char}{
+    \SURFACEMAP{Blue}{%
+    \item \textbf{\MYname}
+    \def\tmp{}%
+    \procextractenvs{members}{\blues/\MYfile}{\addtotmp}{\endaddtotmp}{}{}%
+    \ifx\tmp\empty\else
+    \begin{itemz}%
+      \tmp
+    \end{itemz}%
+    \fi
+    }
+    \MYblues}
+  \parsedmacros
 \end{tlist}
 
       %\csname\jobname\endcsname{

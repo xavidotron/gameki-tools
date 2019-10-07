@@ -32,10 +32,18 @@
     \par
   \vskip.25\baselineskip
   \fboxsep=#5\relax
-  \noindent\fbox{\begin{minipage}[c][#3]{#4}%
+  \noindent
+  \ifdefined\hidestickerboxes
+    \fcolorbox{black}{gray}{\begin{minipage}[c][#3]{#4}%
+      \footnotesize
+      ~%
+  \end{minipage}}%
+  \else
+    \fbox{\begin{minipage}[c][#3]{#4}%
       \footnotesize
       #2%
   \end{minipage}}%
+  \fi
   \memboxafter
   \end{minipage}
 }
